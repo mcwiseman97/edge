@@ -60,7 +60,11 @@ const _window = 28;
 /// rebuilding it drops the seconds, and in a DST fall-back hour the local
 /// wall time names two instants.
 (DateTime, DateTime) correctedSleepWindow(
-    DateTime onset, DateTime wake, TimeOfDay bed, TimeOfDay up) {
+  DateTime onset,
+  DateTime wake,
+  TimeOfDay bed,
+  TimeOfDay up,
+) {
   DateTime nearest(DateTime ref, TimeOfDay t) {
     if (ref.hour == t.hour && ref.minute == t.minute) return ref;
     DateTime? best;
@@ -79,8 +83,13 @@ const _window = 28;
   // First occurrence of `up` after the onset, not onset.day + 1: the nearest
   // pick can land a day early (truncated window, wake moved >12h later).
   for (var k = 0; !newWake.isAfter(newOnset); k++) {
-    newWake = DateTime(newOnset.year, newOnset.month, newOnset.day + k,
-        up.hour, up.minute);
+    newWake = DateTime(
+      newOnset.year,
+      newOnset.month,
+      newOnset.day + k,
+      up.hour,
+      up.minute,
+    );
   }
   return (newOnset, newWake);
 }
@@ -93,12 +102,12 @@ const _window = 28;
 /// an unrecognised label from an older bundle now goes the same way, which is
 /// the honest direction to fail in.
 SleepStage? _stageOf(Object? raw) => switch (raw?.toString()) {
-      'wake' || 'awake' => SleepStage.awake,
-      'rem' => SleepStage.rem,
-      'deep' => SleepStage.deep,
-      'light' || 'nrem' => SleepStage.light,
-      _ => null,
-    };
+  'wake' || 'awake' => SleepStage.awake,
+  'rem' => SleepStage.rem,
+  'deep' => SleepStage.deep,
+  'light' || 'nrem' => SleepStage.light,
+  _ => null,
+};
 
 /// 15-minute bands. The stager sees a wrist, so "you fell asleep in 7 minutes"
 /// is a precision nobody measured.
@@ -116,7 +125,8 @@ Widget _noOvernightLines(BuildContext c) {
   final l = AppLocalizations.of(c);
   return StatusCard(
     l?.sleepDetailNoOvernightTitle ?? 'No overnight signal lines',
-    l?.sleepDetailNoOvernightBody ?? 'No overnight recordings reached this day.',
+    l?.sleepDetailNoOvernightBody ??
+        'No overnight recordings reached this day.',
     icon: LucideIcons.activity,
   );
 }
@@ -146,16 +156,20 @@ String _pct(double v) => '${v.round()}%';
 /// glued in front of the localized lower/higher phrase, so an English unit
 /// here left every other locale reading a half-English verdict.
 String sleepEfficiencyDelta(AppLocalizations? l, double v) =>
-    l?.sleepDetailPointsDelta('${v.round()}') ?? '${v.round()} percentage points';
+    l?.sleepDetailPointsDelta('${v.round()}') ??
+    '${v.round()} percentage points';
 
 /// A reading with its unit, in the display locale: metric detail prints the
 /// same number through [displayFixed] and a translated unit, so a raw
 /// "14.2 br/min" here showed a Russian user two different spellings of one
 /// night.
 @visibleForTesting
-String sleepReadingText(AppLocalizations? l, num value, int places,
-        String unit) =>
-    '${displayFixed(value, places)} ${localizedText(l, unit)}';
+String sleepReadingText(
+  AppLocalizations? l,
+  num value,
+  int places,
+  String unit,
+) => '${displayFixed(value, places)} ${localizedText(l, unit)}';
 
 /// SLP-13 — the three staged figures of a night, as the intervals they are.
 ///
@@ -167,7 +181,7 @@ String sleepReadingText(AppLocalizations? l, num value, int places,
 /// observed floor gets a wide one. A missing confidence is the widest case, not
 /// the narrowest: we do not know how well we saw the night, so we say the least.
 ({ana.StageInterval light, ana.StageInterval deep, ana.StageInterval rem})?
-    _ranges(Map<String, dynamic> n) {
+_ranges(Map<String, dynamic> n) {
   final l = (n['light_min'] as num?)?.round();
   final d = (n['deep_min'] as num?)?.round();
   final r = (n['rem_min'] as num?)?.round();
@@ -326,7 +340,8 @@ class SleepData {
     // off overnight and the card said "7h 04m" while this screen answered "No
     // night to show" about the same tap.
     final days = await repo.availableDays();
-    final prefer = heldOverNightOf(today) ??
+    final prefer =
+        heldOverNightOf(today) ??
         (today['status'] as Map?)?['today_day']?.toString();
     final latest = pickDay(days, null, prefer);
     final day = pickDay(days, want, prefer);
@@ -378,10 +393,16 @@ class SleepData {
       days: days,
       night: night,
       timeline: timeline,
-      need: envMetric(needEnv, needSec == null ? null : needSec / 60, unit: 'min'),
+      need: envMetric(
+        needEnv,
+        needSec == null ? null : needSec / 60,
+        unit: 'min',
+      ),
       debt: envMetric(debtEnv, debtH == null ? null : debtH * 60, unit: 'min'),
-      bedtime:
-          envMetric(bedEnv, envValue(bedEnv)?['bedtime_min_of_day'] as num?),
+      bedtime: envMetric(
+        bedEnv,
+        envValue(bedEnv)?['bedtime_min_of_day'] as num?,
+      ),
       tstHistory: tst,
       deepHistory: deep,
       effHistory: eff,
@@ -414,8 +435,10 @@ String? sleepStepperDay(String day, String? latestDay) =>
 /// meanwhile ([current] != [edited]) is left alone.
 @visibleForTesting
 String? sleepDayAfterOverride(
-        String? current, String edited, String? latestDay) =>
-    current == edited ? sleepStepperDay(edited, latestDay) : current;
+  String? current,
+  String edited,
+  String? latestDay,
+) => current == edited ? sleepStepperDay(edited, latestDay) : current;
 
 /// The scrub card's skin-temperature reading. The timeline value is the
 /// sensor's raw count minus the day's median, already rounded to one decimal:
@@ -448,13 +471,14 @@ class SleepDetail extends StatefulWidget {
   /// back to two weeks ago it read as that night's advice.
   final List<Widget> todayFooter;
 
-  const SleepDetail(
-      {super.key,
-      this.data,
-      this.day,
-      this.embedded = false,
-      this.footer = const [],
-      this.todayFooter = const []});
+  const SleepDetail({
+    super.key,
+    this.data,
+    this.day,
+    this.embedded = false,
+    this.footer = const [],
+    this.todayFooter = const [],
+  });
 
   @override
   State<SleepDetail> createState() => _SleepDetailState();
@@ -470,8 +494,12 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
   void reload() => _load();
 
   /// The pushed screen's scaffold, or the tab's own header and footer.
-  Widget _frame(BuildContext c, String title, List<Widget> body,
-      {String sub = ''}) {
+  Widget _frame(
+    BuildContext c,
+    String title,
+    List<Widget> body, {
+    String sub = '',
+  }) {
     if (!widget.embedded) return detailScaffold(c, title, body, sub: sub);
     final p = P.of(c);
     return RefreshIndicator(
@@ -480,8 +508,7 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(S.x4, S.x4, S.x4, S.x16),
         children: [
-          ScreenTitle(title,
-              trailing: const ProfileAvatar(accent: C.domSleep)),
+          ScreenTitle(title, trailing: const ProfileAvatar(accent: C.domSleep)),
           if (sub.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(left: S.x1, bottom: S.x2),
@@ -607,16 +634,21 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
       var confirmable = true;
       if (app != null && d.day != null) {
         try {
-          correctable =
-              await app.sleepCorrectable(d.day!, sleepSource: 'rejected');
-          wholeNightKept =
-              correctable && await app.sleepCorrectable(d.day!);
+          correctable = await app.sleepCorrectable(
+            d.day!,
+            sleepSource: 'rejected',
+          );
+          wholeNightKept = correctable && await app.sleepCorrectable(d.day!);
           final onset = (d.night['onset_ts'] as num?)?.toInt();
-          confirmable = wholeNightKept ||
+          confirmable =
+              wholeNightKept ||
               (correctable &&
                   onset != null &&
-                  await app.sleepCorrectable(d.day!,
-                      sleepSource: 'confirmed', onsetSec: onset));
+                  await app.sleepCorrectable(
+                    d.day!,
+                    sleepSource: 'confirmed',
+                    onsetSec: onset,
+                  ));
         } catch (_) {}
       }
       // LAST NIGHT ONLY. The card names the luteal phase, and `getCycle` knows
@@ -624,21 +656,24 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
       // back through the record would either drop that half or invent it.
       // Stepping back is also not the moment to ask about a night, which is the
       // stronger half of the reason.
-      final rough = d.day == todayLabel() &&
+      final rough =
+          d.day == todayLabel() &&
               Prefs.getString(kRoughNightDismissed, '') != d.day
           ? await loadRoughNight(repo, d.day!, c: mounted ? context : null)
           : null;
       if (mounted && gen == _loadGen) {
-        setState(() => (
-              _d = d,
-              _lastGood = d,
-              _rough = rough,
-              _correctable = correctable,
-              _wholeNightKept = wholeNightKept,
-              _confirmable = confirmable,
-              _loading = false,
-              _failed = false,
-            ));
+        setState(
+          () => (
+            _d = d,
+            _lastGood = d,
+            _rough = rough,
+            _correctable = correctable,
+            _wholeNightKept = wholeNightKept,
+            _confirmable = confirmable,
+            _loading = false,
+            _failed = false,
+          ),
+        );
       }
     } catch (_) {
       if (mounted && gen == _loadGen) {
@@ -687,7 +722,7 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
           shown == null
               ? (l?.wellnessLoadFailedTitle ?? 'This could not be read')
               : (l?.homeDayLoadFailedTitle(prettyDay(shown, l)) ??
-                  '${prettyDay(shown, l)} could not be read'),
+                    '${prettyDay(shown, l)} could not be read'),
           l?.homeLoadFailedBody ??
               'The stored day failed to load. Nothing was deleted — this is a '
                   'read that went wrong, not missing data.',
@@ -709,7 +744,8 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
       // that must stay reversible the same way any other override is.
       final rejectedDay = d.day;
       final rejected =
-          (d.night['sleep_source'] as String?) == 'rejected' && rejectedDay != null;
+          (d.night['sleep_source'] as String?) == 'rejected' &&
+          rejectedDay != null;
       return _frame(c, title, [
         ...dayNavRow(_day ?? d.day, d.days, _goDay),
         const SizedBox(height: S.x2),
@@ -723,14 +759,16 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
               : (l?.sleepDetailNoNightTitle ?? 'No night to show'),
           rejected
               ? (l?.sleepDetailRejectedBody ??
-                  'You told us this stretch was not sleep, so nothing is '
-                      'scored for it.')
+                    'You told us this stretch was not sleep, so nothing is '
+                        'scored for it.')
               : (_userWindowEmpty(d.night, l) ??
-                  _autoNightUnrecorded(d.night, l) ??
-                  l?.sleepDetailNoNightBody ??
-                  'No stretch of band recordings long enough to score.'),
-          fix: rejected ? '' : (l?.sleepDetailNoNightFix ??
-              'Wear the band overnight and sync in the morning'),
+                    _autoNightUnrecorded(d.night, l) ??
+                    l?.sleepDetailNoNightBody ??
+                    'No stretch of band recordings long enough to score.'),
+          fix: rejected
+              ? ''
+              : (l?.sleepDetailNoNightFix ??
+                    'Wear the band overnight and sync in the morning'),
           icon: rejected ? LucideIcons.undo2 : LucideIcons.moon,
         ),
         // Undo goes back to automatic, which needs the whole night window.
@@ -748,7 +786,8 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
                 ? null
                 : () => _clearWindow(rejectedDay),
             child: Text(
-                l?.sleepDetailUndoRejection ?? 'Undo — go back to automatic'),
+              l?.sleepDetailUndoRejection ?? 'Undo — go back to automatic',
+            ),
           ),
           if (!_saving && _overrideFailed != null)
             StatusCard(
@@ -770,8 +809,10 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
           ),
           if (!_wholeNightKept) _eveningPrunedNote(c, l),
           if (_saving)
-            Text(l?.sleepDetailReanalysing ?? 'Re-analysing the night…',
-                style: F.cap.copyWith(color: P.of(c).ink3)),
+            Text(
+              l?.sleepDetailReanalysing ?? 'Re-analysing the night…',
+              style: F.cap.copyWith(color: P.of(c).ink3),
+            ),
           if (!_saving && _overrideFailed != null)
             StatusCard(
               l?.sleepDetailCorrectionFailedTitle ??
@@ -795,92 +836,176 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
     // one night on disk there is no stepper, and then the subtitle is the only
     // thing that dates the screen, so it names the day the way the stepper
     // would rather than printing the raw yyyy-MM-dd key.
-    return _frame(c, title,
-        sub: d.days.length < 2 ? dayNavLabel(d.day, l).toUpperCase() : '', [
-      ...dayNavRow(_day ?? d.day, d.days, _goDay),
+    return _frame(
+      c,
+      title,
+      sub: d.days.length < 2 ? dayNavLabel(d.day, l).toUpperCase() : '',
+      [
+        ...dayNavRow(_day ?? d.day, d.days, _goDay),
 
-      // ── 1 · THE ANSWER ──
-      _answer(c, p, d, n),
+        // ── 1 · THE ANSWER ──
+        _answer(c, p, d, n),
 
-      // ── 2 · THE NIGHT ITSELF ──
-      const SizedBox(height: S.x3),
-      // Ours, or any paired device's own staging of the same night — shown
-      // side by side as alternatives, never merged.
-      if (d.deviceNights.isNotEmpty) ...[
-        DeviceFilter(
-          allLabel: 'OpenStrap',
-          showWithOne: true,
-          options: [
-            for (final dn in d.deviceNights)
-              (
-                deviceId: dn['device_id'] as String,
-                label: (dn['label'] as String?) ?? 'Device',
-                selectable: true,
-                reason: null,
-              ),
-          ],
-          selected: _staging,
-          onSelect: (id) => setState(() {
-            _staging = id;
-            _scrub = null;
-          }),
-        ),
-        const SizedBox(height: S.x2),
-      ],
-      if (_deviceNight(d) case final dn?)
-        _night(c, p, d, dn, device: dn)
-      else ...[
-        _night(c, p, d, n),
-        if (_scrub != null) _scrubCard(c, p, d),
-      ],
+        // WhoopsBand sleep performance + history (uses measured duration/need).
+        ..._wbSleepExtras(c, d, n),
 
-      // ── 2b · WHOSE WINDOW IS THIS ──
-      ...?_windowCard(c, p, d, n),
-      ..._napsButton(c, l, d.day),
+        // ── 2 · THE NIGHT ITSELF ──
+        const SizedBox(height: S.x3),
+        // Ours, or any paired device's own staging of the same night — shown
+        // side by side as alternatives, never merged.
+        if (d.deviceNights.isNotEmpty) ...[
+          DeviceFilter(
+            allLabel: 'OpenStrap',
+            showWithOne: true,
+            options: [
+              for (final dn in d.deviceNights)
+                (
+                  deviceId: dn['device_id'] as String,
+                  label: (dn['label'] as String?) ?? 'Device',
+                  selectable: true,
+                  reason: null,
+                ),
+            ],
+            selected: _staging,
+            onSelect: (id) => setState(() {
+              _staging = id;
+              _scrub = null;
+            }),
+          ),
+          const SizedBox(height: S.x2),
+        ],
+        if (_deviceNight(d) case final dn?)
+          _night(c, p, d, dn, device: dn)
+        else ...[
+          _night(c, p, d, n),
+          if (_scrub != null) _scrubCard(c, p, d),
+        ],
 
-      // ── 3 · WHAT IT WAS MADE OF ──
-      Section(l?.sleepDetailStagesSection ?? 'Stages', _stages(c, p, n)),
+        // ── 2b · WHOSE WINDOW IS THIS ──
+        ...?_windowCard(c, p, d, n),
+        ..._napsButton(c, l, d.day),
 
-      // ── 4 · AGAINST THE USER'S OWN NIGHTS ──
-      if (_versusUsual(c, p, d, n) case final versus?)
-        Section(l?.sleepDetailVersusUsualSection ?? 'Against your usual', versus),
+        // ── 3 · WHAT IT WAS MADE OF ──
+        Section(l?.sleepDetailStagesSection ?? 'Stages', _stages(c, p, n)),
 
-      // ── 5 · WHAT STOOD OUT ──
-      // Named after the night the nav bar is already showing. "Unusual last
-      // night — Nothing stood out." is a present-tense all-clear, and it was
-      // printed over a night that could be days old.
-      if (unusual != null)
-        Section(
+        // ── 4 · AGAINST THE USER'S OWN NIGHTS ──
+        if (_versusUsual(c, p, d, n) case final versus?)
+          Section(
+            l?.sleepDetailVersusUsualSection ?? 'Against your usual',
+            versus,
+          ),
+
+        // ── 5 · WHAT STOOD OUT ──
+        // Named after the night the nav bar is already showing. "Unusual last
+        // night — Nothing stood out." is a present-tense all-clear, and it was
+        // printed over a night that could be days old.
+        if (unusual != null)
+          Section(
             (daysBehind(_noonOf(d.day)) ?? 0) <= 0
                 ? (l?.sleepDetailUnusualLastNight ?? 'Unusual last night')
                 : (l?.sleepDetailUnusualOnDay(prettyDay(d.day, l)) ??
-                    'Unusual on ${prettyDay(d.day, l)}'),
-            unusual),
+                      'Unusual on ${prettyDay(d.day, l)}'),
+            unusual,
+          ),
 
-      // ── 6 · THE SIGNALS UNDERNEATH ──
-      Section(l?.sleepDetailOvernightSection ?? 'Overnight signals',
-          _overnight(c, p, d)),
+        // ── 6 · THE SIGNALS UNDERNEATH ──
+        Section(
+          l?.sleepDetailOvernightSection ?? 'Overnight signals',
+          _overnight(c, p, d),
+        ),
 
-      // ── 7 · ONE TAKEAWAY ──
-      // Tonight's need, debt and bedtime come from today's cross-day rollup
-      // whichever night is selected, so on a past night they are not that
-      // night's numbers. The tab carries the full plan in its footer, and
-      // printing it here too said the same thing twice on one scroll.
-      if (d.isLatestNight && !widget.embedded)
-        Section(l?.sleepDetailTonightSection ?? 'Tonight', _tonight(c, p, d)),
+        // ── 7 · ONE TAKEAWAY ──
+        // Tonight's need, debt and bedtime come from today's cross-day rollup
+        // whichever night is selected, so on a past night they are not that
+        // night's numbers. The tab carries the full plan in its footer, and
+        // printing it here too said the same thing twice on one scroll.
+        if (d.isLatestNight && !widget.embedded)
+          Section(l?.sleepDetailTonightSection ?? 'Tonight', _tonight(c, p, d)),
 
-      const SizedBox(height: S.x5),
-      // The night this screen is steered to, not the newest one. Dropping it
-      // meant stepping back to Tuesday and then tapping Nerd stats landed
-      // on last night — the same numbers every time, whichever day you
-      // came from.
-      investigateRow(
-          c, () => go(c, Investigate('sleep', day: _day ?? d.day))),
-    ]);
+        const SizedBox(height: S.x5),
+        // The night this screen is steered to, not the newest one. Dropping it
+        // meant stepping back to Tuesday and then tapping Nerd stats landed
+        // on last night — the same numbers every time, whichever day you
+        // came from.
+        investigateRow(
+          c,
+          () => go(c, Investigate('sleep', day: _day ?? d.day)),
+        ),
+      ],
+    );
   }
 
   /// Total sleep, when it ran, and the two ratios that qualify it. Everything
   /// here is measured; nothing is a judgement.
+  List<Widget> _wbSleepExtras(
+    BuildContext c,
+    SleepData d,
+    Map<String, dynamic> n,
+  ) {
+    final sleptMin = (n['duration_min'] as num?)?.toDouble();
+    final needMin = d.need.value;
+    final sleptH = sleptMin == null ? null : sleptMin / 60.0;
+    final needH = needMin == null ? null : needMin / 60.0;
+    final performance = (sleptH != null && needH != null && needH > 0)
+        ? (sleptH / needH).clamp(0.0, 1.2)
+        : (n['efficiency'] as num?)?.toDouble();
+    final histHours = d.tstHistory.isEmpty
+        ? const <double>[]
+        : [for (final m in d.tstHistory.take(7)) m / 60.0];
+    final histPerf = d.effHistory.isEmpty
+        ? const <double>[]
+        : [
+            for (final e in d.effHistory.take(7))
+              // Stored as whole percent historically.
+              (e > 1.5 ? e / 100.0 : e).clamp(0.0, 1.0),
+          ];
+    final weekday = const ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+    return [
+      const SizedBox(height: S.x3),
+      WbSleepPerformance(
+        performance: performance == null ? null : performance.clamp(0.0, 1.0),
+        headline: sleptH == null
+            ? 'No scored night yet'
+            : '${hm(sleptMin)} asleep',
+        detail: needH == null
+            ? 'Performance uses your personal sleep need when it exists.'
+            : 'Need ${needH.toStringAsFixed(1)} h · '
+                  '${((performance ?? 0) * 100).round()}% of need',
+      ),
+      if (histPerf.isNotEmpty) ...[
+        const SizedBox(height: S.x3),
+        WbHistoryBars(
+          title: 'Performance history',
+          values: histPerf,
+          accent: C.wbSleep,
+          labels: [
+            for (var i = 0; i < histPerf.length; i++)
+              weekday[i % weekday.length],
+          ],
+        ),
+      ],
+      if (histHours.isNotEmpty || (sleptH != null && needH != null)) ...[
+        const SizedBox(height: S.x3),
+        if (histHours.isNotEmpty)
+          WbHistoryBars(
+            title: 'Hours asleep',
+            values: histHours,
+            accent: C.wbRecovery,
+            maxValue: histHours.fold<double>(8, (a, b) => a > b ? a : b) + 1,
+            labels: [
+              for (var i = 0; i < histHours.length; i++)
+                weekday[i % weekday.length],
+            ],
+          ),
+        if (sleptH != null) ...[
+          const SizedBox(height: S.x3),
+          WbHoursNeededChart(sleptHours: sleptH, needHours: needH ?? sleptH),
+        ],
+      ],
+    ];
+  }
+
   Widget _answer(BuildContext c, P p, SleepData d, Map<String, dynamic> n) {
     final l = AppLocalizations.of(c);
     final tst = n['duration_min'] as num?;
@@ -896,47 +1021,62 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
         ? null
         : math.max(0, inBed - unobserved);
     return Surface(
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(hm(tst), style: F.n48.copyWith(color: p.ink)),
-        const SizedBox(height: S.x1),
-        Text(l?.sleepDetailTotalSleep ?? 'Total sleep',
-            style: F.cap.copyWith(color: p.ink3)),
-        if (from.isNotEmpty && to.isNotEmpty) ...[
-          const SizedBox(height: S.x4),
-          Row(children: [
-            Icon(LucideIcons.moon, size: 15, color: p.ink3),
-            const SizedBox(width: S.x2),
-            Flexible(
-              child: Text('$from → $to',
-                  style: F.body
-                      .copyWith(color: p.ink, fontWeight: FontWeight.w600)),
-            ),
-          ]),
-        ],
-        if (inBed != null || eff != null) ...[
-          const SizedBox(height: S.x4),
-          InlineMetrics([
-            if (inBed != null) (l?.sleepDetailInBed ?? 'IN BED', hm(inBed), C.indigo),
-            if (watched != null)
-              (l?.sleepDetailWatched ?? 'WATCHED', hm(watched), C.sky),
-            if (eff != null)
-              (watched == null
-                  ? (l?.sleepDetailAsleepOfThat ?? 'ASLEEP OF THAT')
-                  : (l?.sleepDetailAsleep ?? 'ASLEEP'),
-                  _pct(eff * 100), C.green),
-          ]),
-        ],
-        if (watched != null) ...[
-          const SizedBox(height: S.x3),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(hm(tst), style: F.n48.copyWith(color: p.ink)),
+          const SizedBox(height: S.x1),
           Text(
-            l?.sleepDetailWatchedExplain(hm(watched), hm(inBed!)) ??
-                'We watched ${hm(watched)} of your ${hm(inBed!)} in bed; the rest '
-                    'is not a measurement. Asleep, and the stage shares below, are out '
-                    'of the time we watched.',
-            style: F.over.copyWith(color: p.ink3, height: 1.5),
+            l?.sleepDetailTotalSleep ?? 'Total sleep',
+            style: F.cap.copyWith(color: p.ink3),
           ),
+          if (from.isNotEmpty && to.isNotEmpty) ...[
+            const SizedBox(height: S.x4),
+            Row(
+              children: [
+                Icon(LucideIcons.moon, size: 15, color: p.ink3),
+                const SizedBox(width: S.x2),
+                Flexible(
+                  child: Text(
+                    '$from → $to',
+                    style: F.body.copyWith(
+                      color: p.ink,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (inBed != null || eff != null) ...[
+            const SizedBox(height: S.x4),
+            InlineMetrics([
+              if (inBed != null)
+                (l?.sleepDetailInBed ?? 'IN BED', hm(inBed), C.indigo),
+              if (watched != null)
+                (l?.sleepDetailWatched ?? 'WATCHED', hm(watched), C.sky),
+              if (eff != null)
+                (
+                  watched == null
+                      ? (l?.sleepDetailAsleepOfThat ?? 'ASLEEP OF THAT')
+                      : (l?.sleepDetailAsleep ?? 'ASLEEP'),
+                  _pct(eff * 100),
+                  C.green,
+                ),
+            ]),
+          ],
+          if (watched != null) ...[
+            const SizedBox(height: S.x3),
+            Text(
+              l?.sleepDetailWatchedExplain(hm(watched), hm(inBed!)) ??
+                  'We watched ${hm(watched)} of your ${hm(inBed!)} in bed; the rest '
+                      'is not a measurement. Asleep, and the stage shares below, are out '
+                      'of the time we watched.',
+              style: F.over.copyWith(color: p.ink3, height: 1.5),
+            ),
+          ],
         ],
-      ]),
+      ),
     );
   }
 
@@ -967,15 +1107,20 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
         // `_loading` too: `_goDay` swaps `_day` and keeps the old `_d` on
         // screen until `_load()` resolves, so a tap in that window would
         // open naps for the day you just navigated away from.
-        onPressed:
-            _saving || _loading ? null : () => go(c, NapsScreen(day: day)),
+        onPressed: _saving || _loading
+            ? null
+            : () => go(c, NapsScreen(day: day)),
         child: Text(l?.sleepDetailEditNaps ?? 'Naps'),
       ),
     ];
   }
 
   List<Widget>? _windowCard(
-      BuildContext c, P p, SleepData d, Map<String, dynamic> n) {
+    BuildContext c,
+    P p,
+    SleepData d,
+    Map<String, dynamic> n,
+  ) {
     final l = AppLocalizations.of(c);
     final day = d.day;
     final t0 = (n['onset_ts'] as num?)?.round();
@@ -994,97 +1139,117 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
     return [
       const SizedBox(height: S.x3),
       Surface(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Icon(mine ? LucideIcons.userCheck : LucideIcons.wandSparkles,
-                size: 16, color: p.ink3),
-            const SizedBox(width: S.x2),
-            Expanded(
-              child: Text(
-                mine
-                    ? (l?.sleepDetailWindowMine ?? 'You set this window')
-                    : fallback
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  mine ? LucideIcons.userCheck : LucideIcons.wandSparkles,
+                  size: 16,
+                  color: p.ink3,
+                ),
+                const SizedBox(width: S.x2),
+                Expanded(
+                  child: Text(
+                    mine
+                        ? (l?.sleepDetailWindowMine ?? 'You set this window')
+                        : fallback
                         ? (l?.sleepDetailWindowFallback ??
-                            'This window was inferred from heart rate')
+                              'This window was inferred from heart rate')
                         : vendor
-                        ? (l?.sleepDetailStagedByRing ?? 'Staged by your device')
+                        ? (l?.sleepDetailStagedByRing ??
+                              'Staged by your device')
                         : (l?.sleepDetailWindowAuto ??
-                            'This window was staged from the signals'),
-                style: F.body.copyWith(color: p.ink),
+                              'This window was staged from the signals'),
+                    style: F.body.copyWith(color: p.ink),
+                  ),
+                ),
+              ],
+            ),
+            if (fallback) ...[
+              const SizedBox(height: S.x2),
+              Text(
+                l?.sleepDetailWindowFallbackBody ??
+                    'Staging could not find the edges, so the times are a best '
+                        'guess.',
+                style: F.cap.copyWith(color: p.ink3),
               ),
-            ),
-          ]),
-          if (fallback) ...[
-            const SizedBox(height: S.x2),
-            Text(
-              l?.sleepDetailWindowFallbackBody ??
-                  'Staging could not find the edges, so the times are a best '
-                      'guess.',
-              style: F.cap.copyWith(color: p.ink3),
-            ),
-          ],
-          // SLP-02 — settling time, and ONLY here. On the auto path the window
-          // is built from stillness gated on a sleep-ish heart rate, so it
-          // cannot begin before you are already lying quiet: the 40 minutes of
-          // tossing falls outside it and the latency would come out near zero.
-          // On a window the user asserted, the number means what people think
-          // it means. The pipeline abstains for both reasons; this only draws
-          // what it published.
-          if (mine && d.solMin != null) ...[
-            const SizedBox(height: S.x2),
-            Text(
-              l?.sleepDetailWindowSol(_solBand(c, d.solMin!)) ??
-                  'From the start of your window to asleep: '
-                      '${_solBand(c, d.solMin!)}.',
-              style: F.cap.copyWith(color: p.ink3),
-            ),
-          ],
-          const SizedBox(height: S.x2),
-          if (!_correctable)
-            _uncorrectableNote(c, l)
-          else
-          Wrap(spacing: S.x2, children: [
-            if (fallback && _confirmable)
-              TextButton(
-                onPressed: locked ? null : () => _confirmWindow(day),
-                child: Text(l?.sleepDetailConfirmTimes ?? 'These times are right'),
+            ],
+            // SLP-02 — settling time, and ONLY here. On the auto path the window
+            // is built from stillness gated on a sleep-ish heart rate, so it
+            // cannot begin before you are already lying quiet: the 40 minutes of
+            // tossing falls outside it and the latency would come out near zero.
+            // On a window the user asserted, the number means what people think
+            // it means. The pipeline abstains for both reasons; this only draws
+            // what it published.
+            if (mine && d.solMin != null) ...[
+              const SizedBox(height: S.x2),
+              Text(
+                l?.sleepDetailWindowSol(_solBand(c, d.solMin!)) ??
+                    'From the start of your window to asleep: '
+                        '${_solBand(c, d.solMin!)}.',
+                style: F.cap.copyWith(color: p.ink3),
               ),
-            TextButton(
-              onPressed: locked ? null : () => _editWindow(day, t0, t1),
-              child: Text(mine
-                  ? (l?.sleepDetailChangeTimes ?? 'Change the times')
-                  : (l?.sleepDetailSetTimesMyself ?? 'Set the times myself')),
-            ),
-            if (mine && _wholeNightKept)
-              TextButton(
-                onPressed: locked ? null : () => _clearWindow(day),
-                child:
-                    Text(l?.sleepDetailBackToAutomatic ?? 'Back to automatic'),
-              ),
-            // The missing third answer next to "Looks right"/"Edit": naps
-            // already have a reject action (sleep_nap source='rejected');
-            // a whole-night main-sleep session didn't (edge#248).
-            TextButton(
-              onPressed: locked ? null : () => _rejectWindow(day),
-              child: Text(l?.sleepDetailNotSleep ?? 'Not sleep'),
-            ),
-          ]),
-          if (_correctable && !_wholeNightKept) _eveningPrunedNote(c, l),
-          if (busy) ...[
+            ],
             const SizedBox(height: S.x2),
-            Text(l?.sleepDetailReanalysing ?? 'Re-analysing the night…',
-                style: F.cap.copyWith(color: p.ink3)),
+            if (!_correctable)
+              _uncorrectableNote(c, l)
+            else
+              Wrap(
+                spacing: S.x2,
+                children: [
+                  if (fallback && _confirmable)
+                    TextButton(
+                      onPressed: locked ? null : () => _confirmWindow(day),
+                      child: Text(
+                        l?.sleepDetailConfirmTimes ?? 'These times are right',
+                      ),
+                    ),
+                  TextButton(
+                    onPressed: locked ? null : () => _editWindow(day, t0, t1),
+                    child: Text(
+                      mine
+                          ? (l?.sleepDetailChangeTimes ?? 'Change the times')
+                          : (l?.sleepDetailSetTimesMyself ??
+                                'Set the times myself'),
+                    ),
+                  ),
+                  if (mine && _wholeNightKept)
+                    TextButton(
+                      onPressed: locked ? null : () => _clearWindow(day),
+                      child: Text(
+                        l?.sleepDetailBackToAutomatic ?? 'Back to automatic',
+                      ),
+                    ),
+                  // The missing third answer next to "Looks right"/"Edit": naps
+                  // already have a reject action (sleep_nap source='rejected');
+                  // a whole-night main-sleep session didn't (edge#248).
+                  TextButton(
+                    onPressed: locked ? null : () => _rejectWindow(day),
+                    child: Text(l?.sleepDetailNotSleep ?? 'Not sleep'),
+                  ),
+                ],
+              ),
+            if (_correctable && !_wholeNightKept) _eveningPrunedNote(c, l),
+            if (busy) ...[
+              const SizedBox(height: S.x2),
+              Text(
+                l?.sleepDetailReanalysing ?? 'Re-analysing the night…',
+                style: F.cap.copyWith(color: p.ink3),
+              ),
+            ],
+            if (!busy && _overrideFailed != null) ...[
+              const SizedBox(height: S.x3),
+              StatusCard(
+                l?.sleepDetailCorrectionFailedTitle ??
+                    'That correction has not been applied',
+                _overrideFailed!,
+                icon: LucideIcons.triangleAlert,
+              ),
+            ],
           ],
-          if (!busy && _overrideFailed != null) ...[
-            const SizedBox(height: S.x3),
-            StatusCard(
-              l?.sleepDetailCorrectionFailedTitle ??
-                  'That correction has not been applied',
-              _overrideFailed!,
-              icon: LucideIcons.triangleAlert,
-            ),
-          ],
-        ]),
+        ),
       ),
     ];
   }
@@ -1092,35 +1257,34 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
   /// Stands in for the correction buttons on a night that can no longer be
   /// re-analysed, so it isn't offered a fix that can't land.
   Widget _uncorrectableNote(BuildContext c, AppLocalizations? l) => Text(
-        l?.sleepDetailCorrectionUnavailable ??
-            'This night\u2019s detailed recordings are no longer on the phone, '
-                'so its sleep can\u2019t be corrected now.',
-        style: F.cap.copyWith(color: P.of(c).ink3),
-      );
+    l?.sleepDetailCorrectionUnavailable ??
+        'This night\u2019s detailed recordings are no longer on the phone, '
+            'so its sleep can\u2019t be corrected now.',
+    style: F.cap.copyWith(color: P.of(c).ink3),
+  );
 
   /// On the oldest kept night: says why only some corrections are offered.
   Widget _eveningPrunedNote(BuildContext c, AppLocalizations? l) => Text(
-        l?.sleepDetailCorrectionEveningPruned ??
-            'The evening before this night is no longer on the phone, so only '
-                'a bedtime after midnight, or Not sleep, can be applied.',
-        style: F.cap.copyWith(color: P.of(c).ink3),
-      );
+    l?.sleepDetailCorrectionEveningPruned ??
+        'The evening before this night is no longer on the phone, so only '
+            'a bedtime after midnight, or Not sleep, can be applied.',
+    style: F.cap.copyWith(color: P.of(c).ink3),
+  );
 
   Future<void> _confirmWindow(String day) => _runOverride(
-        day,
-        () => context.read<AppState>().confirmSleep(day),
-        applied: (n) => n['sleep_source'] == 'confirmed',
-      );
+    day,
+    () => context.read<AppState>().confirmSleep(day),
+    applied: (n) => n['sleep_source'] == 'confirmed',
+  );
 
-  Future<void> _clearWindow(String day) => _runOverride(
-      day, () => context.read<AppState>().clearSleepOverride(day));
+  Future<void> _clearWindow(String day) =>
+      _runOverride(day, () => context.read<AppState>().clearSleepOverride(day));
 
   Future<void> _rejectWindow(String day) => _runOverride(
-        day,
-        () => context.read<AppState>().rejectSleep(day),
-        applied: (n) =>
-            n['sleep_source'] == 'rejected' && n['has_sleep'] != true,
-      );
+    day,
+    () => context.read<AppState>().rejectSleep(day),
+    applied: (n) => n['sleep_source'] == 'rejected' && n['has_sleep'] != true,
+  );
 
   /// Two pickers, seeded from the window we already have — the user is
   /// correcting times, not entering a date. See [correctedSleepWindow].
@@ -1196,12 +1360,12 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
       // wrong.
       failed = e.eveningPruned
           ? (l?.sleepDetailCorrectionEveningPruned ??
-              'The evening before this night is no longer on the phone, so '
-                  'only a bedtime after midnight, or Not sleep, can be '
-                  'applied.')
+                'The evening before this night is no longer on the phone, so '
+                    'only a bedtime after midnight, or Not sleep, can be '
+                    'applied.')
           : (l?.sleepDetailCorrectionUnavailable ??
-              'This night\u2019s detailed recordings are no longer on the '
-                  'phone, so its sleep can\u2019t be corrected now.');
+                'This night\u2019s detailed recordings are no longer on the '
+                    'phone, so its sleep can\u2019t be corrected now.');
     } catch (e) {
       failed = '$e';
     } finally {
@@ -1232,10 +1396,13 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
         ? applied(_d?.night ?? const <String, dynamic>{})
         : _source != before;
     if (failed != null || !took) {
-      setState(() => _overrideFailed = failed ??
-          _userWindowEmpty(_d?.night ?? const <String, dynamic>{}, l) ??
-          l?.sleepDetailReanalyseFailed ??
-          'The night wasn’t re-analysed; another run was busy or it failed. Your times are saved: open Your data and tap Re-analyze everything.');
+      setState(
+        () => _overrideFailed =
+            failed ??
+            _userWindowEmpty(_d?.night ?? const <String, dynamic>{}, l) ??
+            l?.sleepDetailReanalyseFailed ??
+            'The night wasn’t re-analysed; another run was busy or it failed. Your times are saved: open Your data and tap Re-analyze everything.',
+      );
     }
   }
 
@@ -1244,20 +1411,19 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
   /// just recorded too little of it (charger, off the wrist) or no sleep in it,
   /// so the generic "another run was busy, re-analyse everything" would send
   /// the user to a re-run that gives the same answer.
-  static String? _userWindowEmpty(
-      Map<String, dynamic> n, AppLocalizations? l) {
+  static String? _userWindowEmpty(Map<String, dynamic> n, AppLocalizations? l) {
     final src = n['sleep_source'];
     if ((src != 'manual' && src != 'confirmed') || n['has_sleep'] == true) {
       return null;
     }
     return n['absence_reason'] != null
         ? (l?.sleepDetailWindowUnrecorded ??
-            'Your times are saved, but the band wasn\u2019t recording for most '
-                'of those hours (off your wrist or charging), so there\u2019s '
-                'no night to score.')
+              'Your times are saved, but the band wasn\u2019t recording for most '
+                  'of those hours (off your wrist or charging), so there\u2019s '
+                  'no night to score.')
         : (l?.sleepDetailWindowNoSleep ??
-            'Your times are saved, but the band\u2019s recordings for those '
-                'hours show no sleep to score.');
+              'Your times are saved, but the band\u2019s recordings for those '
+                  'hours show no sleep to score.');
   }
 
   /// Why an automatic night has nothing to show, when the derive knows: the
@@ -1265,7 +1431,9 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
   /// across it to stage one. Null otherwise, so an ordinary empty night keeps
   /// the generic message.
   static String? _autoNightUnrecorded(
-      Map<String, dynamic> n, AppLocalizations? l) {
+    Map<String, dynamic> n,
+    AppLocalizations? l,
+  ) {
     final src = n['sleep_source'];
     if (src == 'manual' ||
         src == 'confirmed' ||
@@ -1297,8 +1465,13 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
     return null;
   }
 
-  Widget _night(BuildContext c, P p, SleepData d, Map<String, dynamic> n,
-      {Map<String, dynamic>? device}) {
+  Widget _night(
+    BuildContext c,
+    P p,
+    SleepData d,
+    Map<String, dynamic> n, {
+    Map<String, dynamic>? device,
+  }) {
     final l = AppLocalizations.of(c);
     final stages = device == null ? d.stages : SleepData.stagesOf(device);
     if (stages.isEmpty) {
@@ -1315,48 +1488,54 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
     final mean = n['cycles_mean_min'] as num?;
     // One lane per stage, tall enough for its own name at any text size.
     final scaler = MediaQuery.textScalerOf(c);
-    final lane = math.max(33.0, scaler.scale(F.over.fontSize!) * F.over.height! + 8);
+    final lane = math.max(
+      33.0,
+      scaler.scale(F.over.fontSize!) * F.over.height! + 8,
+    );
     final totals = _stageTotals(device ?? n, device: device != null);
     return Surface(
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        ChartFrame(
-          title: l?.sleepDetailThroughTheNight ?? 'Through the night',
-          unit: l?.sleepDetailUnitStage ?? 'stage',
-          height: lane * 4,
-          xLabels: [
-            clockOfTs(t0),
-            if (t0 != null && t1 != null && t1 > t0)
-              clockOfTs(t0 + (t1 - t0) ~/ 2),
-            clockOfTs(t1),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ChartFrame(
+            title: l?.sleepDetailThroughTheNight ?? 'Through the night',
+            unit: l?.sleepDetailUnitStage ?? 'stage',
+            height: lane * 4,
+            xLabels: [
+              clockOfTs(t0),
+              if (t0 != null && t1 != null && t1 > t0)
+                clockOfTs(t0 + (t1 - t0) ~/ 2),
+              clockOfTs(t1),
+            ],
+            child: _labelledHypnogram(c, p, stages, n, lane, totals),
+          ),
+          if (device != null) ..._deviceStaging(c, p, device),
+          // Not our staging: say whose it is, wherever it is drawn.
+          if (device == null && n['sleep_source'] == 'vendor_staged') ...[
+            const SizedBox(height: S.x2),
+            Pill(l?.sleepDetailStagedByRing ?? 'Staged by your device', C.n500),
           ],
-          child: _labelledHypnogram(c, p, stages, n, lane, totals),
-        ),
-        if (device != null) ..._deviceStaging(c, p, device),
-        // Not our staging: say whose it is, wherever it is drawn.
-        if (device == null && n['sleep_source'] == 'vendor_staged') ...[
           const SizedBox(height: S.x2),
-          Pill(l?.sleepDetailStagedByRing ?? 'Staged by your device', C.n500),
+          Text(
+            cycles > 0
+                ? (mean == null
+                      ? (l?.sleepDetailTapDragCycles(cycles) ??
+                            'Tap or drag the chart for any moment. $cycles '
+                                '${cycles == 1 ? 'cycle' : 'cycles'}.')
+                      : (l?.sleepDetailTapDragCyclesAvg(cycles, hm(mean)) ??
+                            'Tap or drag the chart for any moment. $cycles '
+                                '${cycles == 1 ? 'cycle' : 'cycles'}, ${hm(mean)} '
+                                'on average.'))
+                : (l?.sleepDetailTapDragNone ??
+                      'Tap or drag the chart for any moment of the night.'),
+            style: F.over.copyWith(color: p.ink3, height: 1.5),
+          ),
+          if (_shape(c, d) case final shape?) ...[
+            const SizedBox(height: S.x2),
+            Text(shape, style: F.over.copyWith(color: p.ink3, height: 1.5)),
+          ],
         ],
-        const SizedBox(height: S.x2),
-        Text(
-          cycles > 0
-              ? (mean == null
-                  ? (l?.sleepDetailTapDragCycles(cycles) ??
-                      'Tap or drag the chart for any moment. $cycles '
-                          '${cycles == 1 ? 'cycle' : 'cycles'}.')
-                  : (l?.sleepDetailTapDragCyclesAvg(cycles, hm(mean)) ??
-                      'Tap or drag the chart for any moment. $cycles '
-                          '${cycles == 1 ? 'cycle' : 'cycles'}, ${hm(mean)} '
-                          'on average.'))
-              : (l?.sleepDetailTapDragNone ??
-                  'Tap or drag the chart for any moment of the night.'),
-          style: F.over.copyWith(color: p.ink3, height: 1.5),
-        ),
-        if (_shape(c, d) case final shape?) ...[
-          const SizedBox(height: S.x2),
-          Text(shape, style: F.over.copyWith(color: p.ink3, height: 1.5)),
-        ],
-      ]),
+      ),
     );
   }
 
@@ -1372,12 +1551,12 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
     };
     final reported = vendorStagesReported(dn['family'] as String?);
     String name(String s) => switch (s) {
-          'wake' => l?.sleepDetailStageAwake ?? 'Awake',
-          'light' => l?.sleepDetailLight ?? 'Light',
-          'deep' => l?.sleepDetailDeep ?? 'Deep',
-          'rem' => l?.sleepDetailStageRem ?? 'REM',
-          _ => s,
-        };
+      'wake' => l?.sleepDetailStageAwake ?? 'Awake',
+      'light' => l?.sleepDetailLight ?? 'Light',
+      'deep' => l?.sleepDetailDeep ?? 'Deep',
+      'rem' => l?.sleepDetailStageRem ?? 'REM',
+      _ => s,
+    };
     final parts = [
       for (final s in const ['deep', 'rem', 'light', 'wake'])
         if (reported.contains(s) && minutes[s] != null)
@@ -1392,8 +1571,10 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
       Pill(l?.sleepDetailStagedBy(label) ?? 'Staged by $label', C.n500),
       if (parts.isNotEmpty) ...[
         const SizedBox(height: S.x2),
-        Text(parts.join(' · '),
-            style: F.over.copyWith(color: p.ink2, height: 1.5)),
+        Text(
+          parts.join(' · '),
+          style: F.over.copyWith(color: p.ink2, height: 1.5),
+        ),
       ],
       if (missing.isNotEmpty) ...[
         const SizedBox(height: S.x1),
@@ -1423,11 +1604,11 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
       if (w != null)
         w == 0
             ? (l?.sleepDetailNoWakeups ??
-                'No wake-ups of 5 minutes or more; shorter ones are invisible to '
-                    'a wrist.')
+                  'No wake-ups of 5 minutes or more; shorter ones are invisible to '
+                      'a wrist.')
             : (l?.sleepDetailAtLeastWakeups(w) ??
-                'At least $w wake-up${w == 1 ? '' : 's'} of 5 minutes or more; '
-                    'shorter ones are invisible to a wrist.'),
+                  'At least $w wake-up${w == 1 ? '' : 's'} of 5 minutes or more; '
+                      'shorter ones are invisible to a wrist.'),
       if (longest != null)
         l?.sleepDetailLongestStretch(hm(longest)) ??
             'Longest unbroken stretch ${hm(longest)}.',
@@ -1450,9 +1631,11 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
       while (j + 1 < st.length && (st[j + 1] == null) == (st[i] == null)) {
         j++;
       }
-      out.add(st[i] == null
-          ? (null, j - i + 1)
-          : (st.sublist(i, j + 1).cast<SleepStage>(), j - i + 1));
+      out.add(
+        st[i] == null
+            ? (null, j - i + 1)
+            : (st.sublist(i, j + 1).cast<SleepStage>(), j - i + 1),
+      );
       i = j + 1;
     }
     return out;
@@ -1462,36 +1645,45 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
   /// and the 44 pt tap rule does not apply to a continuous readout. What DOES
   /// apply is that the readout has to exist without a pointer — [Scrubber]
   /// carries the slider role and speaks [describe] at each step.
-  Widget _hypnogram(BuildContext c, P p, List<SleepStage?> stages,
-          Map<String, dynamic> n, double height) =>
-      Scrubber(
-        value: _scrub,
-        onChanged: (v) => setState(() => _scrub = v),
-        label: AppLocalizations.of(c)?.sleepDetailHypnogramLabel ?? 'Hypnogram',
-        describe: (v) {
-          final l = AppLocalizations.of(c);
-          final t0 = (n['onset_ts'] as num?)?.toInt();
-          final t1 = (n['wake_ts'] as num?)?.toInt();
-          final st = stages.isEmpty
-              ? null
-              : stages[(v * (stages.length - 1)).round().clamp(0, stages.length - 1)];
-          final at = (t0 == null || t1 == null || t1 <= t0)
-              ? (l?.sleepDetailPercentThroughNight((v * 100).round()) ??
-                  '${(v * 100).round()}% through the night')
-              : clockOfTs(t0 + ((t1 - t0) * v).round());
-          final stageName = st == null
-              ? (l?.sleepDetailNotMeasured ?? 'not measured')
-              : _stageName(c, st);
-          return l?.sleepDetailScrubAt(at, stageName) ?? '$at, $stageName';
-        },
-        child: SizedBox(
-          height: height,
-          child: Stack(children: [
-            // One painter per watched stretch, laid out by its width in
-            // columns, with nothing at all where the band was not recording.
-            // Every painter gets the same height, so the four lanes stay on the
-            // same four lines across the whole night.
-            Row(children: [
+  Widget _hypnogram(
+    BuildContext c,
+    P p,
+    List<SleepStage?> stages,
+    Map<String, dynamic> n,
+    double height,
+  ) => Scrubber(
+    value: _scrub,
+    onChanged: (v) => setState(() => _scrub = v),
+    label: AppLocalizations.of(c)?.sleepDetailHypnogramLabel ?? 'Hypnogram',
+    describe: (v) {
+      final l = AppLocalizations.of(c);
+      final t0 = (n['onset_ts'] as num?)?.toInt();
+      final t1 = (n['wake_ts'] as num?)?.toInt();
+      final st = stages.isEmpty
+          ? null
+          : stages[(v * (stages.length - 1)).round().clamp(
+              0,
+              stages.length - 1,
+            )];
+      final at = (t0 == null || t1 == null || t1 <= t0)
+          ? (l?.sleepDetailPercentThroughNight((v * 100).round()) ??
+                '${(v * 100).round()}% through the night')
+          : clockOfTs(t0 + ((t1 - t0) * v).round());
+      final stageName = st == null
+          ? (l?.sleepDetailNotMeasured ?? 'not measured')
+          : _stageName(c, st);
+      return l?.sleepDetailScrubAt(at, stageName) ?? '$at, $stageName';
+    },
+    child: SizedBox(
+      height: height,
+      child: Stack(
+        children: [
+          // One painter per watched stretch, laid out by its width in
+          // columns, with nothing at all where the band was not recording.
+          // Every painter gets the same height, so the four lanes stay on the
+          // same four lines across the whole night.
+          Row(
+            children: [
               for (final (st, cols) in _runs(stages))
                 Expanded(
                   flex: cols,
@@ -1499,20 +1691,26 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
                       ? const SizedBox.expand()
                       : CustomPaint(
                           size: Size.infinite,
-                          painter: Hypnogram(st, p, t: animate(c, 1))),
+                          painter: Hypnogram(st, p, t: animate(c, 1)),
+                        ),
                 ),
-            ]),
-            if (_scrub != null)
-              // Aligned by fraction rather than by a measured offset, so the
-              // cursor needs no width from the layout.
-              Align(
-                alignment: Alignment(_scrub! * 2 - 1, 0),
-                child: SizedBox(width: 2, height: double.infinity,
-                    child: ColoredBox(color: p.ink)),
+            ],
+          ),
+          if (_scrub != null)
+            // Aligned by fraction rather than by a measured offset, so the
+            // cursor needs no width from the layout.
+            Align(
+              alignment: Alignment(_scrub! * 2 - 1, 0),
+              child: SizedBox(
+                width: 2,
+                height: double.infinity,
+                child: ColoredBox(color: p.ink),
               ),
-          ]),
-        ),
-      );
+            ),
+        ],
+      ),
+    ),
+  );
 
   /// What every signal read at the scrubbed instant. Each line abstains on its
   /// own — a night with no respiration series still shows heart rate.
@@ -1547,17 +1745,29 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
         : stages[(_scrub! * (stages.length - 1)).round()];
     final items = <(String, String, Color)>[
       if (at('hr') != null)
-        (l?.sleepDetailHeartRate ?? 'Heart rate',
-            sleepReadingText(l, at('hr')!.round(), 0, 'bpm'), C.red),
+        (
+          l?.sleepDetailHeartRate ?? 'Heart rate',
+          sleepReadingText(l, at('hr')!.round(), 0, 'bpm'),
+          C.red,
+        ),
       if (at('hrv') != null)
-        (l?.sleepDetailHrv ?? 'HRV',
-            sleepReadingText(l, at('hrv')!.round(), 0, 'ms'), C.green),
+        (
+          l?.sleepDetailHrv ?? 'HRV',
+          sleepReadingText(l, at('hrv')!.round(), 0, 'ms'),
+          C.green,
+        ),
       if (at('resp') != null)
-        (l?.sleepDetailBreathing ?? 'Breathing',
-            sleepReadingText(l, at('resp')!, 1, 'br/min'), C.teal),
+        (
+          l?.sleepDetailBreathing ?? 'Breathing',
+          sleepReadingText(l, at('resp')!, 1, 'br/min'),
+          C.teal,
+        ),
       if (at('skin_temp') != null)
-        (l?.sleepDetailTempRelative ?? 'Temp (rel.)',
-            sleepScrubTempDelta(at('skin_temp')!), C.orange),
+        (
+          l?.sleepDetailTempRelative ?? 'Temp (rel.)',
+          sleepScrubTempDelta(at('skin_temp')!),
+          C.orange,
+        ),
     ];
 
     return Padding(
@@ -1565,28 +1775,42 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
       child: Surface(
         color: p.card2,
         elevation: 0,
-        child: Column(children: [
-          Row(children: [
-            Text(clockOfTs(t),
-                style: F.body.copyWith(color: p.ink, fontWeight: FontWeight.w600)),
-            const Spacer(),
-            if (stage != null)
-              Pill(_stageName(c, stage), Hypnogram.pigment[stage] ?? C.blue)
-            else if (stages.isNotEmpty)
-              // Not a stage, so not a Pill: this instant has no colour because
-              // the band was not recording it.
-              Text(l?.sleepDetailNotMeasuredCap ?? 'Not measured',
-                  style: F.cap.copyWith(color: p.ink3)),
-          ]),
-          if (items.isEmpty) ...[
-            const SizedBox(height: S.x3),
-            Text(l?.sleepDetailNoSignalAtMoment ?? 'No signal recorded at this moment.',
-                style: F.cap.copyWith(color: p.ink3)),
-          ] else ...[
-            const SizedBox(height: S.x4),
-            InlineMetrics(items),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Text(
+                  clockOfTs(t),
+                  style: F.body.copyWith(
+                    color: p.ink,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                if (stage != null)
+                  Pill(_stageName(c, stage), Hypnogram.pigment[stage] ?? C.blue)
+                else if (stages.isNotEmpty)
+                  // Not a stage, so not a Pill: this instant has no colour because
+                  // the band was not recording it.
+                  Text(
+                    l?.sleepDetailNotMeasuredCap ?? 'Not measured',
+                    style: F.cap.copyWith(color: p.ink3),
+                  ),
+              ],
+            ),
+            if (items.isEmpty) ...[
+              const SizedBox(height: S.x3),
+              Text(
+                l?.sleepDetailNoSignalAtMoment ??
+                    'No signal recorded at this moment.',
+                style: F.cap.copyWith(color: p.ink3),
+              ),
+            ] else ...[
+              const SizedBox(height: S.x4),
+              InlineMetrics(items),
+            ],
           ],
-        ]),
+        ),
       ),
     );
   }
@@ -1611,8 +1835,14 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
   /// Stages table under the chart carries the same figures.
   static const _nameShare = .3, _minPlotShare = .55;
 
-  Widget _labelledHypnogram(BuildContext c, P p, List<SleepStage?> stages,
-      Map<String, dynamic> n, double lane, Map<SleepStage, String> totals) {
+  Widget _labelledHypnogram(
+    BuildContext c,
+    P p,
+    List<SleepStage?> stages,
+    Map<String, dynamic> n,
+    double lane,
+    Map<SleepStage, String> totals,
+  ) {
     final l = AppLocalizations.of(c);
     final ink = Hypnogram.cols(p);
     final scaler = MediaQuery.textScalerOf(c);
@@ -1622,11 +1852,11 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
       var w = 0.0;
       for (final t in ts) {
         final tp = TextPainter(
-            text: TextSpan(text: t, style: st),
-            textScaler: scaler,
-            textDirection: dir,
-            maxLines: 1)
-          ..layout();
+          text: TextSpan(text: t, style: st),
+          textScaler: scaler,
+          textDirection: dir,
+          maxLines: 1,
+        )..layout();
         w = math.max(w, tp.width);
         tp.dispose();
       }
@@ -1638,70 +1868,86 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
     bool named(SleepStage s) => totals[s] != null || stages.contains(s);
     String name(SleepStage s) => named(s) ? s.label(l) : '';
 
-    Widget column(String Function(SleepStage) text, double width,
-            {bool right = false, bool coloured = false}) =>
-        SizedBox(
-          width: width,
-          child: Column(children: [
-            for (final s in SleepStage.values)
-              SizedBox(
-                height: lane,
-                child: Align(
-                  alignment:
-                      right ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Text(
-                    text(s),
-                    textAlign: right ? TextAlign.right : TextAlign.left,
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.ellipsis,
-                    style: coloured
-                        ? nameStyle.copyWith(color: ink[s])
-                        : F.over.copyWith(color: p.ink2),
-                  ),
+    Widget column(
+      String Function(SleepStage) text,
+      double width, {
+      bool right = false,
+      bool coloured = false,
+    }) => SizedBox(
+      width: width,
+      child: Column(
+        children: [
+          for (final s in SleepStage.values)
+            SizedBox(
+              height: lane,
+              child: Align(
+                alignment: right ? Alignment.centerRight : Alignment.centerLeft,
+                child: Text(
+                  text(s),
+                  textAlign: right ? TextAlign.right : TextAlign.left,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                  style: coloured
+                      ? nameStyle.copyWith(color: ink[s])
+                      : F.over.copyWith(color: p.ink2),
                 ),
               ),
-          ]),
-        );
-
-    return LayoutBuilder(builder: (c, box) {
-      final w = box.maxWidth;
-      final nameW = math.min(
-          widest(SleepStage.values.map(name), nameStyle), w * _nameShare);
-      final totW = widest(totals.values, F.over);
-      final withTotals = !bigText(c) &&
-          totals.isNotEmpty &&
-          w - nameW - totW - 2 * S.x2 >= w * _minPlotShare;
-      return Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        // Spoken by the totals column, or by the scrubber's own readout.
-        ExcludeSemantics(child: column(name, nameW, coloured: true)),
-        const SizedBox(width: S.x2),
-        Expanded(child: _hypnogram(c, p, stages, n, lane * 4)),
-        if (withTotals) ...[
-          const SizedBox(width: S.x2),
-          Semantics(
-            label: [
-              for (final s in SleepStage.values)
-                if (totals[s] case final t?) '${s.label(l)} $t',
-            ].join(', '),
-            child: ExcludeSemantics(
-                child: column((s) => totals[s] ?? '', totW, right: true)),
-          ),
+            ),
         ],
-      ]);
-    });
+      ),
+    );
+
+    return LayoutBuilder(
+      builder: (c, box) {
+        final w = box.maxWidth;
+        final nameW = math.min(
+          widest(SleepStage.values.map(name), nameStyle),
+          w * _nameShare,
+        );
+        final totW = widest(totals.values, F.over);
+        final withTotals =
+            !bigText(c) &&
+            totals.isNotEmpty &&
+            w - nameW - totW - 2 * S.x2 >= w * _minPlotShare;
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Spoken by the totals column, or by the scrubber's own readout.
+            ExcludeSemantics(child: column(name, nameW, coloured: true)),
+            const SizedBox(width: S.x2),
+            Expanded(child: _hypnogram(c, p, stages, n, lane * 4)),
+            if (withTotals) ...[
+              const SizedBox(width: S.x2),
+              Semantics(
+                label: [
+                  for (final s in SleepStage.values)
+                    if (totals[s] case final t?) '${s.label(l)} $t',
+                ].join(', '),
+                child: ExcludeSemantics(
+                  child: column((s) => totals[s] ?? '', totW, right: true),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
   }
 
   /// What each stage came to, as the Stages table prints it: a device's own
   /// minutes, a device-staged night's exact minutes, or our estimator's range.
   /// Awake is always one figure. A stage with nothing to say is left out.
-  Map<SleepStage, String> _stageTotals(Map<String, dynamic> n,
-      {bool device = false}) {
+  Map<SleepStage, String> _stageTotals(
+    Map<String, dynamic> n, {
+    bool device = false,
+  }) {
     if (device) {
       final m = (n['stage_min'] as Map?) ?? const {};
       final reported = vendorStagesReported(n['family'] as String?);
-      String? at(String k) =>
-          reported.contains(k) && m[k] is num ? hm((m[k] as num).toDouble()) : null;
+      String? at(String k) => reported.contains(k) && m[k] is num
+          ? hm((m[k] as num).toDouble())
+          : null;
       return {
         SleepStage.awake: ?at('wake'),
         SleepStage.rem: ?at('rem'),
@@ -1716,10 +1962,13 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
     final awake = n['awake_min'] as num?;
     return {
       SleepStage.awake: ?(awake == null ? null : hm(awake)),
-      SleepStage.rem: ?(exact('rem_min') ??
+      SleepStage.rem:
+          ?(exact('rem_min') ??
           (r != null && n['rem_min'] != null ? _rangeText(r.rem) : null)),
-      SleepStage.light: ?(exact('light_min') ?? (r == null ? null : _rangeText(r.light))),
-      SleepStage.deep: ?(exact('deep_min') ?? (r == null ? null : _rangeText(r.deep))),
+      SleepStage.light:
+          ?(exact('light_min') ?? (r == null ? null : _rangeText(r.light))),
+      SleepStage.deep:
+          ?(exact('deep_min') ?? (r == null ? null : _rangeText(r.deep))),
     };
   }
 
@@ -1731,33 +1980,50 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
   /// restacks rather than squeeze, exactly like [MetricRow].
   Widget _stageRow(BuildContext c, P p, (String, String, Color) s) {
     final dot = Container(
-        width: 10,
-        height: 10,
-        decoration: BoxDecoration(color: s.$3, shape: BoxShape.circle));
+      width: 10,
+      height: 10,
+      decoration: BoxDecoration(color: s.$3, shape: BoxShape.circle),
+    );
     final name = Text(s.$1, style: F.body.copyWith(color: p.ink));
-    final value = Text(s.$2,
-        textAlign: TextAlign.right,
-        style: F.cap.copyWith(color: p.ink, fontWeight: FontWeight.w600));
+    final value = Text(
+      s.$2,
+      textAlign: TextAlign.right,
+      style: F.cap.copyWith(color: p.ink, fontWeight: FontWeight.w600),
+    );
     if (!bigText(c)) {
-      return Row(children: [
+      return Row(
+        children: [
+          dot,
+          const SizedBox(width: S.x3),
+          Expanded(child: name),
+          const SizedBox(width: S.x3),
+          Flexible(child: value),
+        ],
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         dot,
         const SizedBox(width: S.x3),
-        Expanded(child: name),
-        const SizedBox(width: S.x3),
-        Flexible(child: value),
-      ]);
-    }
-    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      dot,
-      const SizedBox(width: S.x3),
-      Expanded(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          name,
-          const SizedBox(height: S.x1),
-          Text(s.$2, style: F.cap.copyWith(color: p.ink, fontWeight: FontWeight.w600)),
-        ]),
-      ),
-    ]);
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              name,
+              const SizedBox(height: S.x1),
+              Text(
+                s.$2,
+                style: F.cap.copyWith(
+                  color: p.ink,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   /// SLP-13 — the stage block, as ranges.
@@ -1797,31 +2063,36 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
         icon: LucideIcons.chartNoAxesColumn,
       );
     }
-    return Column(children: [
-      Surface(
-        pad: const EdgeInsets.symmetric(horizontal: S.x4),
-        child: Column(children: [
-          for (var i = 0; i < rows.length; i++) ...[
-            if (i > 0) Divider(color: p.line, height: 1),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: S.x3),
-              child: _stageRow(c, p, rows[i]),
-            ),
-          ],
-        ]),
-      ),
-      if (r != null) ...[
-        const SizedBox(height: S.x2),
-        // The range IS the reading, and the copy says so straight. A wrist
-        // infers stages from beat timing and movement; it does not count them.
-        // The width is this night's own — better coverage, narrower range —
-        // rather than one published figure applied to every night.
-        Text(
+    return Column(
+      children: [
+        Surface(
+          pad: const EdgeInsets.symmetric(horizontal: S.x4),
+          child: Column(
+            children: [
+              for (var i = 0; i < rows.length; i++) ...[
+                if (i > 0) Divider(color: p.line, height: 1),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: S.x3),
+                  child: _stageRow(c, p, rows[i]),
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (r != null) ...[
+          const SizedBox(height: S.x2),
+          // The range IS the reading, and the copy says so straight. A wrist
+          // infers stages from beat timing and movement; it does not count them.
+          // The width is this night's own — better coverage, narrower range —
+          // rather than one published figure applied to every night.
+          Text(
             l?.sleepDetailStageRangeExplain ??
                 'Each stage is a range, narrower the better we saw the night. Deep is the widest; awake is one figure. Nerd stats has exact counts.',
-            style: F.over.copyWith(color: p.ink3, height: 1.5)),
+            style: F.over.copyWith(color: p.ink3, height: 1.5),
+          ),
+        ],
       ],
-    ]);
+    );
   }
 
   // ── AGAINST YOUR USUAL ────────────────────────────────────────────────────
@@ -1836,23 +2107,29 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
   /// would have been. Deltas and verdicts are the same comparison rendered
   /// twice; the strip IS the delta, the sentence beside it IS the verdict.
   Widget? _versusUsual(
-      BuildContext c, P p, SleepData d, Map<String, dynamic> n) {
+    BuildContext c,
+    P p,
+    SleepData d,
+    Map<String, dynamic> n,
+  ) {
     final l = AppLocalizations.of(c);
     final rows = <Widget>[];
 
     final tst = (n['duration_min'] as num?)?.toDouble();
     if (tst != null) {
-      rows.add(_Compare(
-        label: l?.sleepDetailAskEnough ?? 'Did you sleep enough?',
-        value: hm(tst),
-        tonight: tst,
-        history: d.tstHistory,
-        color: C.indigo,
-        low: l?.sleepDetailShorterThanUsual ?? 'shorter than usual',
-        high: l?.sleepDetailLongerThanUsual ?? 'longer than usual',
-        fmt: (v) => hm(v),
-        dfmt: (v) => hm(v),
-      ));
+      rows.add(
+        _Compare(
+          label: l?.sleepDetailAskEnough ?? 'Did you sleep enough?',
+          value: hm(tst),
+          tonight: tst,
+          history: d.tstHistory,
+          color: C.indigo,
+          low: l?.sleepDetailShorterThanUsual ?? 'shorter than usual',
+          high: l?.sleepDetailLongerThanUsual ?? 'longer than usual',
+          fmt: (v) => hm(v),
+          dfmt: (v) => hm(v),
+        ),
+      );
     }
 
     // SLP-13 — the deep row keeps its band but stops asserting a difference off
@@ -1861,52 +2138,60 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
     // interval sits outside the band, and it drops the magnitude, because the
     // size of a gap between one fuzzy number and a band of fuzzy numbers is the
     // most confident thing on the card and the least supported.
-    final deepRange =
-        n['sleep_source'] == 'vendor_staged' ? null : _ranges(n)?.deep;
+    final deepRange = n['sleep_source'] == 'vendor_staged'
+        ? null
+        : _ranges(n)?.deep;
     if (n['sleep_source'] == 'vendor_staged' && n['deep_min'] is num) {
       // The device's own count: no estimator interval to blur it by.
       final deep = (n['deep_min'] as num).toDouble();
-      rows.add(_Compare(
-        label: l?.sleepDetailAskDeep ?? 'Did you get your usual deep sleep?',
-        value: hm(deep),
-        tonight: deep,
-        history: d.deepHistory,
-        color: C.blue,
-        low: l?.sleepDetailLessThanUsual ?? 'less than usual',
-        high: l?.sleepDetailMoreThanUsual ?? 'more than usual',
-        fmt: (v) => hm(v),
-        dfmt: (v) => hm(v),
-      ));
+      rows.add(
+        _Compare(
+          label: l?.sleepDetailAskDeep ?? 'Did you get your usual deep sleep?',
+          value: hm(deep),
+          tonight: deep,
+          history: d.deepHistory,
+          color: C.blue,
+          low: l?.sleepDetailLessThanUsual ?? 'less than usual',
+          high: l?.sleepDetailMoreThanUsual ?? 'more than usual',
+          fmt: (v) => hm(v),
+          dfmt: (v) => hm(v),
+        ),
+      );
     } else if (deepRange != null) {
       final deep = deepRange.pointSec / 60;
-      rows.add(_Compare(
-        label: l?.sleepDetailAskDeep ?? 'Did you get your usual deep sleep?',
-        value: _rangeText(deepRange),
-        tonight: deep,
-        blur: (deepRange.hiSec - deepRange.loSec) / 120,
-        history: d.deepHistory,
-        color: C.blue,
-        low: l?.sleepDetailLessThanUsual ?? 'less than usual',
-        high: l?.sleepDetailMoreThanUsual ?? 'more than usual',
-        fmt: (v) => hm(v),
-        dfmt: (v) => hm(v),
-      ));
+      rows.add(
+        _Compare(
+          label: l?.sleepDetailAskDeep ?? 'Did you get your usual deep sleep?',
+          value: _rangeText(deepRange),
+          tonight: deep,
+          blur: (deepRange.hiSec - deepRange.loSec) / 120,
+          history: d.deepHistory,
+          color: C.blue,
+          low: l?.sleepDetailLessThanUsual ?? 'less than usual',
+          high: l?.sleepDetailMoreThanUsual ?? 'more than usual',
+          fmt: (v) => hm(v),
+          dfmt: (v) => hm(v),
+        ),
+      );
     }
 
     final eff = (n['efficiency'] as num?)?.toDouble();
     if (eff != null) {
-      rows.add(_Compare(
-        label: l?.sleepDetailAskSleptThrough ??
-            'Did you sleep through your time in bed?',
-        value: _pct(eff * 100),
-        tonight: eff * 100,
-        history: d.effHistory,
-        color: C.green,
-        low: l?.sleepDetailLowerThanUsual ?? 'lower than usual',
-        high: l?.sleepDetailHigherThanUsual ?? 'higher than usual',
-        fmt: _pct,
-        dfmt: (v) => sleepEfficiencyDelta(l, v),
-      ));
+      rows.add(
+        _Compare(
+          label:
+              l?.sleepDetailAskSleptThrough ??
+              'Did you sleep through your time in bed?',
+          value: _pct(eff * 100),
+          tonight: eff * 100,
+          history: d.effHistory,
+          color: C.green,
+          low: l?.sleepDetailLowerThanUsual ?? 'lower than usual',
+          high: l?.sleepDetailHigherThanUsual ?? 'higher than usual',
+          fmt: _pct,
+          dfmt: (v) => sleepEfficiencyDelta(l, v),
+        ),
+      );
     }
 
     // Timing is measured on an axis anchored at last night's onset: every past
@@ -1917,18 +2202,21 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
     final onset = (n['onset_ts'] as num?)?.round();
     if (onset != null && d.onsetHistory.isNotEmpty) {
       final rel = [for (final o in d.onsetHistory) _relMinutes(o, onset)];
-      rows.add(_Compare(
-        label: l?.sleepDetailAskOnTime ??
-            'Did you fall asleep at your usual time?',
-        value: clockOfTs(onset),
-        tonight: 0,
-        history: rel,
-        color: C.purple,
-        low: l?.sleepDetailEarlierThanUsual ?? 'earlier than usual',
-        high: l?.sleepDetailLaterThanUsual ?? 'later than usual',
-        fmt: (v) => clockOfTs(onset + (v * 60).round()),
-        dfmt: (v) => hm(v),
-      ));
+      rows.add(
+        _Compare(
+          label:
+              l?.sleepDetailAskOnTime ??
+              'Did you fall asleep at your usual time?',
+          value: clockOfTs(onset),
+          tonight: 0,
+          history: rel,
+          color: C.purple,
+          low: l?.sleepDetailEarlierThanUsual ?? 'earlier than usual',
+          high: l?.sleepDetailLaterThanUsual ?? 'later than usual',
+          fmt: (v) => clockOfTs(onset + (v * 60).round()),
+          dfmt: (v) => hm(v),
+        ),
+      );
     }
 
     final have = [
@@ -1946,27 +2234,33 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
       return StatusCard(
         l?.sleepDetailNotEnoughNightsTitle ?? 'Not enough nights to compare',
         '',
-        fix: l?.sleepDetailNightsSoFar(have, _minNights) ??
+        fix:
+            l?.sleepDetailNightsSoFar(have, _minNights) ??
             '$have of $_minNights nights so far',
         icon: LucideIcons.chartNoAxesColumn,
       );
     }
 
-    return Column(children: [
-      Surface(
-        child: Column(children: [
-          for (var i = 0; i < rows.length; i++) ...[
-            if (i > 0) const SizedBox(height: S.x5),
-            rows[i],
-          ],
-        ]),
-      ),
-      const SizedBox(height: S.x2),
-      Text(
+    return Column(
+      children: [
+        Surface(
+          child: Column(
+            children: [
+              for (var i = 0; i < rows.length; i++) ...[
+                if (i > 0) const SizedBox(height: S.x5),
+                rows[i],
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: S.x2),
+        Text(
           l?.sleepDetailBarExplain ??
               'The bar is the middle half of your own nights.',
-          style: F.over.copyWith(color: p.ink3, height: 1.5)),
-    ]);
+          style: F.over.copyWith(color: p.ink3, height: 1.5),
+        ),
+      ],
+    );
   }
 
   /// Signed minutes from [ref] to [t], as times of day, wrapped to ±12 h.
@@ -2006,31 +2300,38 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
       // the lowest of which was 41m" — the claim and its evidence disagreeing
       // in one sentence.
       if (v < lo) {
-        items.add(InsightCard(
+        items.add(
+          InsightCard(
             lowLabel,
             l?.sleepDetailLessThanAny(noun, fmt(v), hist.length, fmt(lo)) ??
                 '$noun ${fmt(v)} — less than any of your last ${hist.length} '
                     'nights, the lowest of which was ${fmt(lo)}.',
             icon: LucideIcons.trendingDown,
-            color: C.orange));
+            color: C.orange,
+          ),
+        );
       } else if (v > hi) {
-        items.add(InsightCard(
+        items.add(
+          InsightCard(
             highLabel,
             l?.sleepDetailMoreThanAny(noun, fmt(v), hist.length, fmt(hi)) ??
                 '$noun ${fmt(v)} — more than any of your last ${hist.length} '
                     'nights, the highest of which was ${fmt(hi)}.',
             icon: LucideIcons.trendingUp,
-            color: C.green));
+            color: C.green,
+          ),
+        );
       }
     }
 
     extreme(
-        (n['duration_min'] as num?)?.toDouble(),
-        d.tstHistory,
-        l?.sleepDetailYouSlept ?? 'You slept',
-        l?.sleepDetailShortestNightLately ?? 'Your shortest night lately',
-        l?.sleepDetailLongestNightLately ?? 'Your longest night lately',
-        hm);
+      (n['duration_min'] as num?)?.toDouble(),
+      d.tstHistory,
+      l?.sleepDetailYouSlept ?? 'You slept',
+      l?.sleepDetailShortestNightLately ?? 'Your shortest night lately',
+      l?.sleepDetailLongestNightLately ?? 'Your longest night lately',
+      hm,
+    );
     // SLP-13a — NO deep-sleep extreme. `segment.dart` emits
     // `deep_low_confidence` and calls the Light/Deep split unvalidated; ranking
     // last night's deep minutes against 28 other nights of the same unvalidated
@@ -2050,10 +2351,12 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
     // cards on one observation and the reader cannot tell they are one.
     final rough = _rough;
     if (rough != null) {
-      items.add(RoughNightCard(
-        night: rough,
-        onDismiss: () => setState(() => _rough = null),
-      ));
+      items.add(
+        RoughNightCard(
+          night: rough,
+          onDismiss: () => setState(() => _rough = null),
+        ),
+      );
     }
 
     final noc = n['nocturnal'];
@@ -2062,13 +2365,15 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
         noc is Map &&
         noc['elevated'] == true &&
         vsBase != null) {
-      items.add(InsightCard(
-        l?.sleepDetailSleepingHrHighTitle ?? 'Sleeping heart rate ran high',
-        l?.sleepDetailSleepingHrHighBody(displayFixed(vsBase, 1)) ??
-            '${displayFixed(vsBase, 1)} bpm above your usual. Common after alcohol, a late meal, a hard session or an infection starting. A measurement, not a diagnosis.',
-        icon: LucideIcons.heartPulse,
-        color: C.red,
-      ));
+      items.add(
+        InsightCard(
+          l?.sleepDetailSleepingHrHighTitle ?? 'Sleeping heart rate ran high',
+          l?.sleepDetailSleepingHrHighBody(displayFixed(vsBase, 1)) ??
+              '${displayFixed(vsBase, 1)} bpm above your usual. Common after alcohol, a late meal, a hard session or an infection starting. A measurement, not a diagnosis.',
+          icon: LucideIcons.heartPulse,
+          color: C.red,
+        ),
+      );
     }
 
     if (items.isEmpty) {
@@ -2079,29 +2384,36 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
       return Surface(
         color: p.card2,
         elevation: 0,
-        child: Row(children: [
-          Icon(LucideIcons.check, size: 16, color: p.on(C.green)),
-          const SizedBox(width: S.x3),
-          Expanded(
-            child: Text(l?.sleepDetailNothingStoodOut ?? 'Nothing stood out.',
-                style: F.cap.copyWith(color: p.ink2, height: 1.5)),
-          ),
-        ]),
+        child: Row(
+          children: [
+            Icon(LucideIcons.check, size: 16, color: p.on(C.green)),
+            const SizedBox(width: S.x3),
+            Expanded(
+              child: Text(
+                l?.sleepDetailNothingStoodOut ?? 'Nothing stood out.',
+                style: F.cap.copyWith(color: p.ink2, height: 1.5),
+              ),
+            ),
+          ],
+        ),
       );
     }
 
-    return Column(children: [
-      for (var i = 0; i < items.length; i++) ...[
-        if (i > 0) const SizedBox(height: S.x3),
-        items[i],
+    return Column(
+      children: [
+        for (var i = 0; i < items.length; i++) ...[
+          if (i > 0) const SizedBox(height: S.x3),
+          items[i],
+        ],
       ],
-    ]);
+    );
   }
 
   // ── OVERNIGHT SIGNALS ─────────────────────────────────────────────────────
 
   Widget _overnight(BuildContext c, P p, SleepData d) {
     final loc = AppLocalizations.of(c);
+
     /// One lane as `(timestamp, value)`. The timestamp is the point — the
     /// signals arrive on different cadences.
     List<(int, double)> stamped(String key) {
@@ -2133,16 +2445,23 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
     // others rather than a reading of its own.
     final summary = <(String, String, Color)>[
       if (noc is Map && noc['sleeping_hr_avg'] != null)
-        (loc?.sleepDetailSleepingHr ?? 'SLEEPING HR',
-            sleepReadingText(loc, noc['sleeping_hr_avg'] as num, 0, 'bpm'),
-            C.red),
+        (
+          loc?.sleepDetailSleepingHr ?? 'SLEEPING HR',
+          sleepReadingText(loc, noc['sleeping_hr_avg'] as num, 0, 'bpm'),
+          C.red,
+        ),
       if (noc is Map && noc['sleeping_hr_min'] != null)
-        (loc?.sleepDetailLowest ?? 'LOWEST',
-            sleepReadingText(loc, noc['sleeping_hr_min'] as num, 0, 'bpm'),
-            C.blue),
+        (
+          loc?.sleepDetailLowest ?? 'LOWEST',
+          sleepReadingText(loc, noc['sleeping_hr_min'] as num, 0, 'bpm'),
+          C.blue,
+        ),
       if (respV != null)
-        (loc?.sleepDetailBreathingCaps ?? 'BREATHING',
-            sleepReadingText(loc, respV, 1, 'br/min'), C.teal),
+        (
+          loc?.sleepDetailBreathingCaps ?? 'BREATHING',
+          sleepReadingText(loc, respV, 1, 'br/min'),
+          C.teal,
+        ),
     ];
 
     if (all.isEmpty) {
@@ -2157,9 +2476,11 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
     // The window is the night the axis labels name, and the column count is the
     // densest lane, capped: past ~a column per pixel the extra buckets only add
     // holes.
-    var t0 = (n['onset_ts'] as num?)?.round() ??
+    var t0 =
+        (n['onset_ts'] as num?)?.round() ??
         all.map((e) => e.$1).reduce((a, b) => a < b ? a : b);
-    var t1 = (n['wake_ts'] as num?)?.round() ??
+    var t1 =
+        (n['wake_ts'] as num?)?.round() ??
         all.map((e) => e.$1).reduce((a, b) => a > b ? a : b);
     if (t1 <= t0) {
       t0 = all.map((e) => e.$1).reduce((a, b) => a < b ? a : b);
@@ -2200,8 +2521,8 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
     final cols = t1 <= t0
         ? 0
         : lens.isEmpty
-            ? 2
-            : lens.reduce(math.min).clamp(8, 480);
+        ? 2
+        : lens.reduce(math.min).clamp(8, 480);
 
     /// Bucket mean per column; null where the lane has nothing in that
     /// bucket. A null is a HOLE — the painter breaks the line rather than
@@ -2210,13 +2531,15 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
       final sum = List<double>.filled(cols, 0), cnt = List<int>.filled(cols, 0);
       for (final (t, x) in v) {
         if (t < t0 || t > t1) continue;
-        final i = (((t - t0) / (t1 - t0)) * (cols - 1)).round().clamp(0, cols - 1);
+        final i = (((t - t0) / (t1 - t0)) * (cols - 1)).round().clamp(
+          0,
+          cols - 1,
+        );
         sum[i] += x;
         cnt[i]++;
       }
       return [
-        for (var i = 0; i < cols; i++)
-          cnt[i] == 0 ? null : sum[i] / cnt[i],
+        for (var i = 0; i < cols; i++) cnt[i] == 0 ? null : sum[i] / cnt[i],
       ];
     }
 
@@ -2229,8 +2552,14 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
     // scale is PINNED to the night's own range and its unit is named. Three
     // unlabelled lines on three invisible axes was the least readable chart
     // in the app.
-    void lane(List<(int, double)> raw, String label, String unit, Color col,
-        {String Function(double) format = axisInt, bool range = true}) {
+    void lane(
+      List<(int, double)> raw,
+      String label,
+      String unit,
+      Color col, {
+      String Function(double) format = axisInt,
+      bool range = true,
+    }) {
       if (raw.isEmpty || cols == 0) return;
       final g = grid(raw);
       final present = <double>[for (final v in g) ?v];
@@ -2246,10 +2575,11 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
         if (v > hi) hi = v;
       }
       legend.add((
-          range
-              ? '$label ${format(lo)}–${format(hi)} ${uiText(c, unit)}'
-              : '$label (${uiText(c, unit)})',
-          col));
+        range
+            ? '$label ${format(lo)}–${format(hi)} ${uiText(c, unit)}'
+            : '$label (${uiText(c, unit)})',
+        col,
+      ));
       axes.add(AxisSpec.of(present, ticks: 2, format: format));
       units.add(unit);
     }
@@ -2259,62 +2589,83 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
     // you are looking at.
     lane(hr, loc?.sleepDetailHeartRate ?? 'Heart rate', 'bpm', p.on(C.red));
     lane(hrv, loc?.sleepDetailHrv ?? 'HRV', 'ms', p.on(C.green));
-    lane(resp, loc?.sleepDetailBreathing ?? 'Breathing', 'br/min', p.on(C.teal));
+    lane(
+      resp,
+      loc?.sleepDetailBreathing ?? 'Breathing',
+      'br/min',
+      p.on(C.teal),
+    );
     // Skin temperature is ADC-relative — a deviation, never a °C. The unit
     // says so rather than implying a thermometer. No low–high: sensor counts
     // like "-206.6–68.2" read as impossible temperatures.
-    lane(temp, loc?.sleepDetailSkinTemp ?? 'Skin temp', 'rel', p.on(C.orange),
-        format: axisFixed, range: false);
+    lane(
+      temp,
+      loc?.sleepDetailSkinTemp ?? 'Skin temp',
+      'rel',
+      p.on(C.orange),
+      format: axisFixed,
+      range: false,
+    );
 
     if (series.isEmpty) {
       return summary.isEmpty
           ? _noOvernightLines(c)
           : Surface(child: InlineMetrics(summary));
     }
-    final linked = n['onset_ts'] is num &&
+    final linked =
+        n['onset_ts'] is num &&
         n['wake_ts'] is num &&
         t0 == (n['onset_ts'] as num).round() &&
         t1 == (n['wake_ts'] as num).round();
     return Surface(
-      child: Column(children: [
-        if (summary.isNotEmpty) ...[
-          InlineMetrics(summary),
-          const SizedBox(height: S.x5),
-        ],
-        ChartFrame(
-          title: loc?.sleepDetailThroughTheNight ?? 'Through the night',
-          unit: units.join(' · '),
-          height: 44.0 * series.length + 20,
-          xLabels: [
-            clockOfTs(n['onset_ts'] as num?),
-            clockOfTs(n['wake_ts'] as num?),
+      child: Column(
+        children: [
+          if (summary.isNotEmpty) ...[
+            InlineMetrics(summary),
+            const SizedBox(height: S.x5),
           ],
-          legend: legend,
-          // No footnote. The legend already names each lane and its unit, and
-          // the lanes are visibly separate — a paragraph explaining that they
-          // are separate was describing the picture instead of letting it work.
-          // The hypnogram's cursor, on the same onset→wake clock: scrub
-          // either chart and both show the same instant, with the readout
-          // under each. Only when the night has both ends, which is what
-          // makes the two time bases one.
-          child: linked
-              ? Scrubber(
-                  value: _scrub,
-                  onChanged: (v) => setState(() => _scrub = v),
-                  label: loc?.sleepDetailThroughTheNight ?? 'Through the night',
-                  describe: (v) => clockOfTs(
-                      t0 + ((t1 - t0) * v).round()),
-                  child: CustomPaint(
+          ChartFrame(
+            title: loc?.sleepDetailThroughTheNight ?? 'Through the night',
+            unit: units.join(' · '),
+            height: 44.0 * series.length + 20,
+            xLabels: [
+              clockOfTs(n['onset_ts'] as num?),
+              clockOfTs(n['wake_ts'] as num?),
+            ],
+            legend: legend,
+            // No footnote. The legend already names each lane and its unit, and
+            // the lanes are visibly separate — a paragraph explaining that they
+            // are separate was describing the picture instead of letting it work.
+            // The hypnogram's cursor, on the same onset→wake clock: scrub
+            // either chart and both show the same instant, with the readout
+            // under each. Only when the night has both ends, which is what
+            // makes the two time bases one.
+            child: linked
+                ? Scrubber(
+                    value: _scrub,
+                    onChanged: (v) => setState(() => _scrub = v),
+                    label:
+                        loc?.sleepDetailThroughTheNight ?? 'Through the night',
+                    describe: (v) => clockOfTs(t0 + ((t1 - t0) * v).round()),
+                    child: CustomPaint(
                       size: Size.infinite,
-                      painter: NightStack(series, colors,
-                          axes: axes, selectedX: _scrub, cursor: p.ink)),
-                )
-              : CustomPaint(
-                  size: Size.infinite,
-                  painter: NightStack(series, colors, axes: axes)),
-        ),
-        if (linked && _scrub != null) _scrubCard(c, p, d),
-      ]),
+                      painter: NightStack(
+                        series,
+                        colors,
+                        axes: axes,
+                        selectedX: _scrub,
+                        cursor: p.ink,
+                      ),
+                    ),
+                  )
+                : CustomPaint(
+                    size: Size.infinite,
+                    painter: NightStack(series, colors, axes: axes),
+                  ),
+          ),
+          if (linked && _scrub != null) _scrubCard(c, p, d),
+        ],
+      ),
     );
   }
 
@@ -2331,42 +2682,54 @@ class _SleepDetailState extends State<SleepDetail> with RevisionReload {
 
     if (need == null && bed == null) {
       return StatusCard.forMetric(
-              l?.sleepDetailSleepNeedNotEstablished ??
-                  'Sleep need not established',
-              d.need) ??
+            l?.sleepDetailSleepNeedNotEstablished ??
+                'Sleep need not established',
+            d.need,
+          ) ??
           const SizedBox.shrink();
     }
 
     final reason = [
-      if (need != null) l?.sleepDetailYourNeedIs(hm(need)) ?? 'Your need is ${hm(need)}',
+      if (need != null)
+        l?.sleepDetailYourNeedIs(hm(need)) ?? 'Your need is ${hm(need)}',
       if (debt != null && debt >= 1)
         l?.sleepDetailYouAreDown(hm(debt)) ?? 'you are ${hm(debt)} down',
     ].join(', ');
 
     return Surface(
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
               Flexible(
-                child: Text(bed != null ? clock(bed) : hm(need),
-                    style: F.n34.copyWith(color: p.ink)),
+                child: Text(
+                  bed != null ? clock(bed) : hm(need),
+                  style: F.n34.copyWith(color: p.ink),
+                ),
               ),
               const SizedBox(width: S.x2),
               Flexible(
                 child: Text(
-                    bed != null
-                        ? (l?.sleepDetailLightsOut ?? 'lights out')
-                        : (l?.sleepDetailToAimFor ?? 'to aim for'),
-                    style: F.cap.copyWith(color: p.ink3)),
+                  bed != null
+                      ? (l?.sleepDetailLightsOut ?? 'lights out')
+                      : (l?.sleepDetailToAimFor ?? 'to aim for'),
+                  style: F.cap.copyWith(color: p.ink3),
+                ),
               ),
-            ]),
-        if (reason.isNotEmpty) ...[
-          const SizedBox(height: S.x3),
-          Text('$reason.', style: F.body.copyWith(color: p.ink2, height: 1.5)),
+            ],
+          ),
+          if (reason.isNotEmpty) ...[
+            const SizedBox(height: S.x3),
+            Text(
+              '$reason.',
+              style: F.body.copyWith(color: p.ink2, height: 1.5),
+            ),
+          ],
         ],
-      ]),
+      ),
     );
   }
 }
@@ -2417,64 +2780,84 @@ class _Compare extends StatelessWidget {
     final l = AppLocalizations.of(c);
     final band = _band(history);
 
-    final head = Row(children: [
-      Expanded(child: Text(label, style: F.body.copyWith(color: p.ink))),
-      const SizedBox(width: S.x2),
-      Flexible(
-        child: Text(value,
+    final head = Row(
+      children: [
+        Expanded(
+          child: Text(label, style: F.body.copyWith(color: p.ink)),
+        ),
+        const SizedBox(width: S.x2),
+        Flexible(
+          child: Text(
+            value,
             textAlign: TextAlign.right,
-            style: F.n17.copyWith(color: p.ink, fontWeight: FontWeight.w600)),
-      ),
-    ]);
+            style: F.n17.copyWith(color: p.ink, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
+    );
 
     if (band == null) {
       // The value is real, the comparison is not available yet. Say which is
       // which rather than dropping the row or drawing an empty band.
-      return Column(children: [
-        head,
-        const SizedBox(height: S.x1),
-        Text(
+      return Column(
+        children: [
+          head,
+          const SizedBox(height: S.x1),
+          Text(
             l?.sleepDetailNoPersonalRangeYet(history.length, _minNights) ??
                 'No personal range yet — ${history.length} of $_minNights nights.',
-            style: F.over.copyWith(color: p.ink3)),
-      ]);
+            style: F.over.copyWith(color: p.ink3),
+          ),
+        ],
+      );
     }
 
     final verdict = tonight + blur < band.lo
-        ? (blur > 0 ? _capitalise(low) : '${dfmt((band.mid - tonight).abs())} $low')
+        ? (blur > 0
+              ? _capitalise(low)
+              : '${dfmt((band.mid - tonight).abs())} $low')
         : tonight - blur > band.hi
-            ? (blur > 0
-                ? _capitalise(high)
-                : '${dfmt((tonight - band.mid).abs())} $high')
-            : blur > 0
-                // NOT "typical". The interval overlaps the band, which means
-                // this night is not far enough from usual for us to tell —
-                // a different statement, and the honest one.
-                ? (l?.sleepDetailNotFarEnoughToCall ??
-                    'Not far enough from usual to call')
-                : (l?.sleepDetailTypicalForYou ?? 'Typical for you');
+        ? (blur > 0
+              ? _capitalise(high)
+              : '${dfmt((tonight - band.mid).abs())} $high')
+        : blur > 0
+        // NOT "typical". The interval overlaps the band, which means
+        // this night is not far enough from usual for us to tell —
+        // a different statement, and the honest one.
+        ? (l?.sleepDetailNotFarEnoughToCall ??
+              'Not far enough from usual to call')
+        : (l?.sleepDetailTypicalForYou ?? 'Typical for you');
 
     final lo = math.min(tonight, history.reduce(math.min));
     final hi = math.max(tonight, history.reduce(math.max));
 
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      head,
-      const SizedBox(height: S.x3),
-      _Strip(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        head,
+        const SizedBox(height: S.x3),
+        _Strip(
           lo: lo,
           hi: hi,
           bandLo: band.lo,
           bandHi: band.hi,
           mark: tonight,
-          color: color),
-      const SizedBox(height: S.x2),
-      Text(
+          color: color,
+        ),
+        const SizedBox(height: S.x2),
+        Text(
           l?.sleepDetailVerdictSummary(
-                  verdict, fmt(band.lo), fmt(band.hi), band.n) ??
+                verdict,
+                fmt(band.lo),
+                fmt(band.hi),
+                band.n,
+              ) ??
               '$verdict · usual ${fmt(band.lo)}–${fmt(band.hi)} over ${band.n} '
                   'nights',
-          style: F.over.copyWith(color: p.ink3, height: 1.5)),
-    ]);
+          style: F.over.copyWith(color: p.ink3, height: 1.5),
+        ),
+      ],
+    );
   }
 }
 
@@ -2510,35 +2893,46 @@ class _Strip extends StatelessWidget {
           return SizedBox(
             height: 18,
             width: w,
-            child: Stack(children: [
-              Positioned(
-                left: 0,
-                top: 5,
-                width: w,
-                height: 8,
-                child: DecoratedBox(
-                    decoration:
-                        BoxDecoration(color: p.track, borderRadius: R.rPill)),
-              ),
-              Positioned(
-                left: math.min(left, w - width),
-                top: 5,
-                width: width,
-                height: 8,
-                child: DecoratedBox(
+            child: Stack(
+              children: [
+                Positioned(
+                  left: 0,
+                  top: 5,
+                  width: w,
+                  height: 8,
+                  child: DecoratedBox(
                     decoration: BoxDecoration(
-                        color: p.on(color), borderRadius: R.rPill)),
-              ),
-              Positioned(
-                left: (f(mark) * w - 1.5).clamp(0.0, w - 3),
-                top: 0,
-                width: 3,
-                height: 18,
-                child: DecoratedBox(
-                    decoration:
-                        BoxDecoration(color: p.ink, borderRadius: R.rPill)),
-              ),
-            ]),
+                      color: p.track,
+                      borderRadius: R.rPill,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: math.min(left, w - width),
+                  top: 5,
+                  width: width,
+                  height: 8,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: p.on(color),
+                      borderRadius: R.rPill,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: (f(mark) * w - 1.5).clamp(0.0, w - 3),
+                  top: 0,
+                  width: 3,
+                  height: 18,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: p.ink,
+                      borderRadius: R.rPill,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),

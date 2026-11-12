@@ -1,6 +1,7 @@
 // The four-tab shell.
 //
-// Today · Sleep · Activity · Health. Stable: the contents personalise, the
+// Overview · Rest · Move · Body — WhoopsBand labels over the same four domains
+// (today / sleep / activity / health). Stable: the contents personalise, the
 // mental map does not. Each domain owns an accent, so colour tells you where
 // you are before the label does. Profile is not a tab; every tab's header
 // carries the avatar into it.
@@ -20,10 +21,10 @@ import 'theme.dart';
 
 /// The four primary destinations, in bar order.
 enum ShellDomain {
-  today('Today', LucideIcons.house, C.domHome),
-  sleep('Sleep', LucideIcons.moon, C.domSleep),
-  activity('Activity', LucideIcons.dumbbell, C.domMove),
-  health('Health', LucideIcons.heartPulse, C.domHealth);
+  today('Overview', LucideIcons.house, C.domHome),
+  sleep('Rest', LucideIcons.moon, C.domSleep),
+  activity('Move', LucideIcons.dumbbell, C.domMove),
+  health('Body', LucideIcons.heartPulse, C.domHealth);
 
   const ShellDomain(this.label, this.icon, this.accent);
 
@@ -270,26 +271,26 @@ class _Tab extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-            AnimatedContainer(
-              duration: motion(c, Motion.base),
-              padding: EdgeInsets.symmetric(
-                horizontal: on ? S.x3 : 0,
-                vertical: S.x1,
+              AnimatedContainer(
+                duration: motion(c, Motion.base),
+                padding: EdgeInsets.symmetric(
+                  horizontal: on ? S.x3 : 0,
+                  vertical: S.x1,
+                ),
+                decoration: BoxDecoration(
+                  color: on ? p.wash(domain.accent) : const Color(0x00000000),
+                  borderRadius: R.rPill,
+                ),
+                child: Icon(domain.icon, size: 20, color: ink),
               ),
-              decoration: BoxDecoration(
-                color: on ? p.wash(domain.accent) : const Color(0x00000000),
-                borderRadius: R.rPill,
-              ),
-              child: Icon(domain.icon, size: 20, color: ink),
-            ),
               const SizedBox(height: 3),
               Text(
                 label,
                 textAlign: TextAlign.center,
-              style: F.over.copyWith(
-                color: ink,
-                fontWeight: on ? FontWeight.w600 : FontWeight.w500,
-              ),
+                style: F.over.copyWith(
+                  color: ink,
+                  fontWeight: on ? FontWeight.w600 : FontWeight.w500,
+                ),
               ),
             ],
           ),

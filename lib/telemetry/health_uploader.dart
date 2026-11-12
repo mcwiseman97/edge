@@ -9,7 +9,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:battery_plus/battery_plus.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crypto/crypto.dart' show sha256;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -143,13 +142,10 @@ class HealthUploader {
   }
 
   Future<bool> _onWifi() async {
-    try {
-      final res = await Connectivity().checkConnectivity();
-      return res.contains(ConnectivityResult.wifi) ||
-          res.contains(ConnectivityResult.ethernet);
-    } catch (_) {
-      return false; // unknown → don't burn mobile data
-    }
+    // connectivity_plus removed: its iOS register() SIGSEGVs at launch on
+    // Flutter 3.50 / iOS 27 (swift_getObjectType in ConnectivityPlusPlugin).
+    // Fail closed — never burn cellular on an unknown network.
+    return false;
   }
 
   Future<bool> _charging() async {

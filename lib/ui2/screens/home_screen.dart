@@ -34,7 +34,12 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../../ai/briefing.dart'
-    show Briefing, BriefingPeriod, BriefingStore, currentBriefingPeriod, resolveBriefingToShow;
+    show
+        Briefing,
+        BriefingPeriod,
+        BriefingStore,
+        currentBriefingPeriod,
+        resolveBriefingToShow;
 import '../../compute/findings.dart'
     show
         isRecentFindingDate,
@@ -67,8 +72,7 @@ import '../profile/alarm.dart'
     show AlarmArmState, alarmArmOf, alarmDoor, alarmGlanceCard;
 import '../profile/devices.dart' show RePair, formatDayTime;
 import '../profile/profile.dart';
-import '../profile/wearable_numbers.dart'
-    show WearableCells, kHomeWearableRows;
+import '../profile/wearable_numbers.dart' show WearableCells, kHomeWearableRows;
 import '../ui2.dart';
 import 'ai_briefing.dart' show AiBriefingScreen;
 import 'coach.dart';
@@ -92,8 +96,8 @@ const pad = EdgeInsets.fromLTRB(S.x4, 0, S.x4, S.x16 + S.x8);
 /// so a plain route gets the fade-through on Android and the Cupertino slide
 /// WITH swipe-back on iOS. [themedRoute] also keeps the pushed screen
 /// re-colouring on an appearance change and names the route for Crashlytics.
-void go(BuildContext c, Widget w) => Navigator.of(c)
-    .push(themedRoute((_) => w, name: w.runtimeType.toString()));
+void go(BuildContext c, Widget w) =>
+    Navigator.of(c).push(themedRoute((_) => w, name: w.runtimeType.toString()));
 
 /// The repo, or null when there is no AppState above us — which is the case in
 /// every golden. A screen with no repo renders its absent states, which is
@@ -245,11 +249,15 @@ DateTime? lastDataAtOf(BuildContext c) {
 /// Bare clock time for the day on screen, the full "Fri 4 Sep, 07:12"
 /// otherwise — a lone "07:12" against a strap not worn since Friday is the
 /// most misleading thing this line could say.
-String syncedThroughLabel(DateTime? at, String? todayId,
-    [AppLocalizations? l]) {
+String syncedThroughLabel(
+  DateTime? at,
+  String? todayId, [
+  AppLocalizations? l,
+]) {
   if (at == null) return l?.homeSyncedNever ?? 'No band data yet';
   final today = todayId == null ? null : DateTime.tryParse(todayId);
-  final isToday = today != null &&
+  final isToday =
+      today != null &&
       at.year == today.year &&
       at.month == today.month &&
       at.day == today.day;
@@ -296,19 +304,28 @@ Widget? batteryLine(BuildContext c) {
   final (pct, charging) = battery;
   final p = P.of(c);
   final color = lowBattery(pct, charging) ? p.on(C.red) : p.ink3;
-  return Row(mainAxisSize: MainAxisSize.min, children: [
-    Icon(charging ? LucideIcons.batteryCharging : LucideIcons.battery,
-        size: 13, color: color),
-    const SizedBox(width: 3),
-    Text('${pct.round()}%', style: F.cap.copyWith(color: color)),
-  ]);
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(
+        charging ? LucideIcons.batteryCharging : LucideIcons.battery,
+        size: 13,
+        color: color,
+      ),
+      const SizedBox(width: 3),
+      Text('${pct.round()}%', style: F.cap.copyWith(color: color)),
+    ],
+  );
 }
 
 /// The status line as Home renders it, so the loading / failed / bare paths
 /// show it too. It answers "how far are we?", and the moment that question is
 /// loudest is the one where there is no day to show.
-Widget syncedThroughLine(BuildContext c, String? todayId,
-    [AppLocalizations? l]) {
+Widget syncedThroughLine(
+  BuildContext c,
+  String? todayId, [
+  AppLocalizations? l,
+]) {
   return Text(
     syncedThroughLabel(lastDataAtOf(c), todayId, l),
     style: F.cap.copyWith(color: P.of(c).ink3),
@@ -340,7 +357,8 @@ Metric metricOf(Object? raw) => Metric.parse(raw);
 /// of resolving the day per window.
 String? stepSensorLabel(Metric m, [AppLocalizations? l]) {
   final used = m.inputsUsed;
-  final strap = used.contains('band_pedometer_100hz') ||
+  final strap =
+      used.contains('band_pedometer_100hz') ||
       used.contains('band_step_counter');
   final phone = used.contains('phone_pedometer');
   if (strap && phone) return l?.homeStepSensorStrapPhone ?? 'Strap + phone';
@@ -401,7 +419,7 @@ String? staleOvernightNote(Map<String, dynamic> today, [AppLocalizations? l]) {
   return (st is Map ? st['overnight_state']?.toString() : null) == 'building'
       ? l?.homeOvernightBuilding ?? 'Last night is still being worked out.'
       : l?.homeOvernightNothingYet ??
-          'Nothing from last night has reached the app yet.';
+            'Nothing from last night has reached the app yet.';
 }
 
 /// An overnight envelope, REFUSED when the night behind it is not today's.
@@ -418,8 +436,11 @@ String? staleOvernightNote(Map<String, dynamic> today, [AppLocalizations? l]) {
 /// So the numbers stop here and the reason travels in their place. The night
 /// itself is not lost — [heldOverNightOf] still names it, and the screens that
 /// are ABOUT a dated night still open it.
-Metric overnightMetric(Map<String, dynamic> today, Object? raw,
-    [AppLocalizations? l]) {
+Metric overnightMetric(
+  Map<String, dynamic> today,
+  Object? raw, [
+  AppLocalizations? l,
+]) {
   final why = staleOvernightNote(today, l);
   return why == null ? metricOf(raw) : Metric(note: why);
 }
@@ -428,7 +449,9 @@ Metric overnightMetric(Map<String, dynamic> today, Object? raw,
 /// honesty (tier, confidence, note) so `StatusCard.forMetric` still works on
 /// it.
 Metric envMetric(Object? raw, num? scalar, {String? unit}) {
-  final m = raw is Map ? raw.cast<String, dynamic>() : const <String, dynamic>{};
+  final m = raw is Map
+      ? raw.cast<String, dynamic>()
+      : const <String, dynamic>{};
   final env = Metric.parse({...m, 'value': scalar});
   return scalar == null && env.note == null
       ? Metric(unit: unit, note: m['note']?.toString())
@@ -501,8 +524,11 @@ List<double> seriesOf(Object? chart) => valuesOf(pointsOf(chart));
 /// from: it used to be the point's position in the array, and `metric_series`
 /// holds one row per DERIVED day, so a thirty-point series can span two months
 /// and both its edges were labelled as though it spanned thirty days.
-String axisDay(int? epochSec,
-    {String todayWord = 'Today', String unitWord = 'days'}) {
+String axisDay(
+  int? epochSec, {
+  String todayWord = 'Today',
+  String unitWord = 'days',
+}) {
   final behind = daysBehind(epochSec);
   if (behind == null) return '';
   if (behind <= 0) return todayWord;
@@ -515,15 +541,17 @@ String axisDay(int? epochSec,
 int? daysBehind(int? epochSec) {
   if (epochSec == null) return null;
   return calendarDaysBetween(
-      DateTime.fromMillisecondsSinceEpoch(epochSec * 1000), DateTime.now());
+    DateTime.fromMillisecondsSinceEpoch(epochSec * 1000),
+    DateTime.now(),
+  );
 }
 
 /// The withheld-rollup reason inside a `getInsights()` result, or null when the
 /// result is real (or simply empty).
 Map<String, dynamic>? staleReasonOf(Map<String, dynamic> insights) =>
     insights['stale'] is Map
-        ? (insights['stale'] as Map).cast<String, dynamic>()
-        : null;
+    ? (insights['stale'] as Map).cast<String, dynamic>()
+    : null;
 
 /// The cross-day rollup was WITHHELD: `getInsights` returned the reason it
 /// refused instead of the numbers (`LocalRepositoryImpl.crossDayStaleReason`).
@@ -547,14 +575,16 @@ StatusCard? dbRebuiltCard(DbRebuild? r, [AppLocalizations? l]) {
   final saved = r.salvaged.entries.where((e) => e.value > 0).toList()
     ..sort((a, b) => b.value.compareTo(a.value));
   final lost = r.salvaged.entries.where((e) => e.value == 0).toList();
-  final savedList = saved.map((e) => '${e.key} ${thousands(e.value)}').join(' · ');
+  final savedList = saved
+      .map((e) => '${e.key} ${thousands(e.value)}')
+      .join(' · ');
   final lostList = lost.map((e) => e.key).join(' · ');
   return StatusCard(
     l?.homeDbRebuiltTitle ?? 'Your database was rebuilt to start the app',
     '${r.cause}\n\n'
-        '${saved.isEmpty ? (l?.homeDbRebuiltNothingRecovered ?? 'Nothing could be read back.') : (l?.homeDbRebuiltRecovered(savedList) ?? 'Recovered: $savedList.')}'
-        '${lost.isEmpty ? '' : ' ${l?.homeDbRebuiltEmpty(lostList) ?? 'Empty: $lostList.'}'}'
-        '\n\n${l?.homeDbRebuiltKept(r.quarantinePath) ?? 'The original file is kept at ${r.quarantinePath} — nothing was deleted.'}',
+    '${saved.isEmpty ? (l?.homeDbRebuiltNothingRecovered ?? 'Nothing could be read back.') : (l?.homeDbRebuiltRecovered(savedList) ?? 'Recovered: $savedList.')}'
+    '${lost.isEmpty ? '' : ' ${l?.homeDbRebuiltEmpty(lostList) ?? 'Empty: $lostList.'}'}'
+    '\n\n${l?.homeDbRebuiltKept(r.quarantinePath) ?? 'The original file is kept at ${r.quarantinePath} — nothing was deleted.'}',
     icon: LucideIcons.databaseBackup,
   );
 }
@@ -567,28 +597,36 @@ StatusCard? dbRebuiltCard(DbRebuild? r, [AppLocalizations? l]) {
 /// the session, and its bar is pinned right below this card, so the card
 /// points there rather than duplicating the door.
 StatusCard workoutHoldCard([AppLocalizations? l]) => StatusCard(
-      l?.homeWorkoutHoldTitle ?? 'A workout is still running',
-      l?.homeWorkoutHoldBody ??
-          'Today is paused while a workout runs. The band keeps recording; finish the workout from the bar below and today fills in.',
-      icon: LucideIcons.timer,
-    );
+  l?.homeWorkoutHoldTitle ?? 'A workout is still running',
+  l?.homeWorkoutHoldBody ??
+      'Today is paused while a workout runs. The band keeps recording; finish the workout from the bar below and today fills in.',
+  icon: LucideIcons.timer,
+);
 
 StatusCard? staleInsightsCard(
-    Map<String, dynamic>? reason, VoidCallback? onSync, [AppLocalizations? l]) {
+  Map<String, dynamic>? reason,
+  VoidCallback? onSync, [
+  AppLocalizations? l,
+]) {
   final s = reason;
   if (s == null) return null;
   final built = s['built_for_day']?.toString();
   return StatusCard(
-    l?.homeInsightsRebuildingTitle ?? 'Your cross-day insights are being rebuilt',
+    l?.homeInsightsRebuildingTitle ??
+        'Your cross-day insights are being rebuilt',
     switch (s['kind']) {
-      'algo_version' => l?.homeInsightsRebuildingAlgoVersion ??
-          'How these are computed changed with the last update.',
-      'stale' => built == null || built.isEmpty
-          ? (l?.homeInsightsStaleOverWeek ??
-              'Your trends were last updated over a week ago. Sync the band to bring them up to date.')
-          : (l?.homeInsightsStaleOnDay(prettyDay(built, l)) ??
-              'Your trends were last updated on ${prettyDay(built, l)}. Sync the band to bring them up to date.'),
-      _ => l?.homeInsightsNoVersionStamp ?? 'Your trends are being updated. This takes a minute after a sync.',
+      'algo_version' =>
+        l?.homeInsightsRebuildingAlgoVersion ??
+            'How these are computed changed with the last update.',
+      'stale' =>
+        built == null || built.isEmpty
+            ? (l?.homeInsightsStaleOverWeek ??
+                  'Your trends were last updated over a week ago. Sync the band to bring them up to date.')
+            : (l?.homeInsightsStaleOnDay(prettyDay(built, l)) ??
+                  'Your trends were last updated on ${prettyDay(built, l)}. Sync the band to bring them up to date.'),
+      _ =>
+        l?.homeInsightsNoVersionStamp ??
+            'Your trends are being updated. This takes a minute after a sync.',
     },
     fix: onSync == null ? '' : (l?.homeSyncBand ?? 'Sync the band'),
     icon: LucideIcons.refreshCw,
@@ -675,33 +713,69 @@ String clockOfTs(num? ts) {
 }
 
 const _months = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 String monthName(int month, AppLocalizations? l) {
   if (l == null) return _months[month - 1];
   return [
-    l.homeMonthJanuary, l.homeMonthFebruary, l.homeMonthMarch,
-    l.homeMonthApril, l.homeMonthMay, l.homeMonthJune,
-    l.homeMonthJuly, l.homeMonthAugust, l.homeMonthSeptember,
-    l.homeMonthOctober, l.homeMonthNovember, l.homeMonthDecember,
+    l.homeMonthJanuary,
+    l.homeMonthFebruary,
+    l.homeMonthMarch,
+    l.homeMonthApril,
+    l.homeMonthMay,
+    l.homeMonthJune,
+    l.homeMonthJuly,
+    l.homeMonthAugust,
+    l.homeMonthSeptember,
+    l.homeMonthOctober,
+    l.homeMonthNovember,
+    l.homeMonthDecember,
   ][month - 1];
 }
 
 const _monthsShort = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 /// Abbreviated month for "Thu 4 Sep" date chips.
 String monthShortName(int month, AppLocalizations? l) {
   if (l == null) return _monthsShort[month - 1];
   return [
-    l.homeMonthJanuaryShort, l.homeMonthFebruaryShort, l.homeMonthMarchShort,
-    l.homeMonthAprilShort, l.homeMonthMayShort, l.homeMonthJuneShort,
-    l.homeMonthJulyShort, l.homeMonthAugustShort, l.homeMonthSeptemberShort,
-    l.homeMonthOctoberShort, l.homeMonthNovemberShort, l.homeMonthDecemberShort,
+    l.homeMonthJanuaryShort,
+    l.homeMonthFebruaryShort,
+    l.homeMonthMarchShort,
+    l.homeMonthAprilShort,
+    l.homeMonthMayShort,
+    l.homeMonthJuneShort,
+    l.homeMonthJulyShort,
+    l.homeMonthAugustShort,
+    l.homeMonthSeptemberShort,
+    l.homeMonthOctoberShort,
+    l.homeMonthNovemberShort,
+    l.homeMonthDecemberShort,
   ][month - 1];
 }
 
@@ -713,8 +787,13 @@ const _weekdaysShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 String weekdayShortName(int weekday, AppLocalizations? l) {
   if (l == null) return _weekdaysShort[weekday - 1];
   return [
-    l.wellnessMon, l.wellnessTue, l.wellnessWed,
-    l.wellnessThu, l.wellnessFri, l.wellnessSat, l.wellnessSun,
+    l.wellnessMon,
+    l.wellnessTue,
+    l.wellnessWed,
+    l.wellnessThu,
+    l.wellnessFri,
+    l.wellnessSat,
+    l.wellnessSun,
   ][weekday - 1];
 }
 
@@ -768,21 +847,39 @@ String prettyDay(String? dayId, [AppLocalizations? l]) {
 /// person's four inputs are, and it moves with how many of them are present.
 /// Re-derive it from a real `metric_series` readiness distribution when there
 /// is one long enough to measure; do not nudge the cut-offs by feel.
-({String label, Color color, int tier}) readinessBand(num? v,
-    [AppLocalizations? l]) {
+({String label, Color color, int tier}) readinessBand(
+  num? v, [
+  AppLocalizations? l,
+]) {
   if (v == null) {
-    return (label: l?.homeReadinessNotScored ?? 'Not scored', color: C.n400, tier: -1);
+    return (
+      label: l?.homeReadinessNotScored ?? 'Not scored',
+      color: C.n400,
+      tier: -1,
+    );
   }
   if (v >= kReadinessGoodFrom) {
-    return (label: l?.homeReadinessGoodToGo ?? 'Good to go', color: C.green, tier: 3);
+    return (
+      label: l?.homeReadinessGoodToGo ?? 'Good to go',
+      color: C.green,
+      tier: 3,
+    );
   }
   if (v >= kReadinessEasyBelow) {
     return (label: l?.homeReadinessSteady ?? 'Steady', color: C.green, tier: 2);
   }
   if (v >= kReadinessRestBelow) {
-    return (label: l?.homeReadinessTakeItEasy ?? 'Take it easy', color: C.orange, tier: 1);
+    return (
+      label: l?.homeReadinessTakeItEasy ?? 'Take it easy',
+      color: C.orange,
+      tier: 1,
+    );
   }
-  return (label: l?.homeReadinessRestToday ?? 'Rest today', color: C.red, tier: 0);
+  return (
+    label: l?.homeReadinessRestToday ?? 'Rest today',
+    color: C.red,
+    tier: 0,
+  );
 }
 
 /// Glass-box driver keys are the pipeline's own short names.
@@ -808,9 +905,7 @@ String driverLabel(Object? key, [AppLocalizations? l]) {
   if (known != null) return known;
   if (k.isEmpty) return '';
   final words = k.replaceAll('_', ' ').trim();
-  return words.isEmpty
-      ? ''
-      : '${words[0].toUpperCase()}${words.substring(1)}';
+  return words.isEmpty ? '' : '${words[0].toUpperCase()}${words.substring(1)}';
 }
 
 /// The three rings, and what each one does when its metric is not there.
@@ -854,7 +949,15 @@ class RingTrio extends StatelessWidget {
   Widget build(BuildContext c) {
     final p = P.of(c);
     final l = AppLocalizations.of(c);
-    final rings = [for (final k in HomeRingKind.values) _ringOf(k, d, l)];
+    // WhoopsBand Overview order: Sleep → Recovery → Strain (story: night,
+    // bounce-back, day cost). Enum declaration order stays recovery/strain/sleep
+    // for stable serialization elsewhere.
+    const order = [
+      HomeRingKind.sleep,
+      HomeRingKind.recovery,
+      HomeRingKind.strain,
+    ];
+    final rings = [for (final k in order) _ringOf(k, d, l)];
     final gaps = rings.where((r) => r.why != null).toList();
     // THERE IS NO "THESE TWO ARE FROM SATURDAY" LINE ANY MORE, and there is
     // nothing left for one to explain. Recovery and sleep used to be served
@@ -865,59 +968,67 @@ class RingTrio extends StatelessWidget {
     // ([overnightMetric]), so a ring with no night behind it is a gap row with
     // the reason in it — same place every other absence on this screen goes.
 
-    return Surface(
+    return WbCard(
       elevation: 2,
-      child: Column(children: [
-        if (bigText(c))
-          // Past ~1.3× a 100 pt column cannot hold the word "Recovery" on one
-          // line and there is nowhere for it to wrap to. The ring keeps its
-          // size and the type gets the width instead.
-          for (var i = 0; i < rings.length; i++) ...[
-            if (i > 0) const SizedBox(height: S.x2),
-            _RingRow(rings[i], onTap: _open(rings[i].kind)),
-          ]
-        else
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (var i = 0; i < rings.length; i++) ...[
-                if (i > 0) const SizedBox(width: S.x3),
-                Expanded(
-                    child: _RingColumn(rings[i], onTap: _open(rings[i].kind))),
+      child: Column(
+        children: [
+          if (bigText(c))
+            // Past ~1.3× a 100 pt column cannot hold the word "Recovery" on one
+            // line and there is nowhere for it to wrap to. The ring keeps its
+            // size and the type gets the width instead.
+            for (var i = 0; i < rings.length; i++) ...[
+              if (i > 0) const SizedBox(height: S.x2),
+              _RingRow(rings[i], onTap: _open(rings[i].kind)),
+            ]
+          else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var i = 0; i < rings.length; i++) ...[
+                  if (i > 0) const SizedBox(width: S.x3),
+                  Expanded(
+                    child: _RingColumn(rings[i], onTap: _open(rings[i].kind)),
+                  ),
+                ],
               ],
-            ],
-          ),
-        for (final r in gaps) ...[
-          const SizedBox(height: S.x2),
-          Divider(color: p.line, height: 1),
-          _GapRow(r, onTap: _open(r.kind)),
-        ],
-        if (recoveryUpdatedLine(d.readinessUpdate, l) case final note?) ...[
-          const SizedBox(height: S.x2),
-          Text(note, style: F.cap.copyWith(color: p.ink3)),
-        ],
-        if (d.readiness.value != null && d.drivers.isNotEmpty) ...[
-          const SizedBox(height: S.x3),
-          Divider(color: p.line, height: 1),
-          const SizedBox(height: S.x3),
-          Pressable(
-            onTap: _open(HomeRingKind.recovery),
-            // Top-aligned: at an accessibility size the driver list is three
-            // lines and "Why?" was centred against the middle of them.
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(l?.homeWhyLabel ?? 'Why?', style: F.cap.copyWith(color: p.ink3)),
-              const SizedBox(width: S.x2),
-              Expanded(
-                child: Text(
-                  d.drivers
-                      .take(3)
-                      .map((e) => driverLabel(e['label'], l))
-                      .join(' · '),
-                  style: F.cap.copyWith(color: p.ink2),
-                ),
+            ),
+          for (final r in gaps) ...[
+            const SizedBox(height: S.x2),
+            Divider(color: p.line, height: 1),
+            _GapRow(r, onTap: _open(r.kind)),
+          ],
+          if (recoveryUpdatedLine(d.readinessUpdate, l) case final note?) ...[
+            const SizedBox(height: S.x2),
+            Text(note, style: F.cap.copyWith(color: p.ink3)),
+          ],
+          if (d.readiness.value != null && d.drivers.isNotEmpty) ...[
+            const SizedBox(height: S.x3),
+            Divider(color: p.line, height: 1),
+            const SizedBox(height: S.x3),
+            Pressable(
+              onTap: _open(HomeRingKind.recovery),
+              // Top-aligned: at an accessibility size the driver list is three
+              // lines and "Why?" was centred against the middle of them.
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l?.homeWhyLabel ?? 'Why?',
+                    style: F.cap.copyWith(color: p.ink3),
+                  ),
+                  const SizedBox(width: S.x2),
+                  Expanded(
+                    child: Text(
+                      d.drivers
+                          .take(3)
+                          .map((e) => driverLabel(e['label'], l))
+                          .join(' · '),
+                      style: F.cap.copyWith(color: p.ink2),
+                    ),
+                  ),
+                  Icon(LucideIcons.chevronRight, size: 15, color: p.ink3),
+                ],
               ),
-              Icon(LucideIcons.chevronRight, size: 15, color: p.ink3),
-            ]),
             ),
           ],
         ],
@@ -1009,11 +1120,11 @@ class _RingState {
   Color ink(P p) => measured && !provisional ? p.on(color) : p.ink3;
 
   String get spoken => [
-        label,
-        measured ? value : value.toLowerCase(),
-        if (sub.isNotEmpty) sub,
-        ?why,
-      ].join('. ');
+    label,
+    measured ? value : value.toLowerCase(),
+    if (sub.isNotEmpty) sub,
+    ?why,
+  ].join('. ');
 }
 
 _RingState _ringOf(HomeRingKind k, HomeData d, AppLocalizations? l) {
@@ -1022,23 +1133,36 @@ _RingState _ringOf(HomeRingKind k, HomeData d, AppLocalizations? l) {
       final v = d.readiness.value;
       final band = readinessBand(v, l);
       if (d.recoveryState == 'night_in_progress') {
-        return _RingState(k, l?.homeRingRecovery ?? 'Recovery',
-            LucideIcons.batteryCharging, C.green,
-            value: l?.homeRecoverySleeping ?? 'Sleeping…',
-            why: l?.homeRecoveryAfterWake ??
-                'Recovery is scored after you wake.');
+        return _RingState(
+          k,
+          l?.homeRingRecovery ?? 'Recovery',
+          LucideIcons.batteryCharging,
+          C.green,
+          value: l?.homeRecoverySleeping ?? 'Sleeping…',
+          why: l?.homeRecoveryAfterWake ?? 'Recovery is scored after you wake.',
+        );
       }
       if (d.recoveryState == 'provisional' && v != null) {
-        return _RingState(k, l?.homeRingRecovery ?? 'Recovery',
-            LucideIcons.batteryCharging, band.color,
-            value: '${v.round()}',
-            sub: l?.homeRecoveryFinishingUp ?? 'Finishing up',
-            frac: v / 100,
-            provisional: true);
+        return _RingState(
+          k,
+          l?.homeRingRecovery ?? 'Recovery',
+          LucideIcons.batteryCharging,
+          band.color,
+          value: '${v.round()}',
+          sub: l?.homeRecoveryFinishingUp ?? 'Finishing up',
+          frac: v / 100,
+          provisional: true,
+        );
       }
       return v == null
-          ? _gap(k, l?.homeRingRecovery ?? 'Recovery', LucideIcons.batteryCharging,
-              C.green, d.readiness, l?.homeReadinessNotScored ?? 'Not scored', l,
+          ? _gap(
+              k,
+              l?.homeRingRecovery ?? 'Recovery',
+              LucideIcons.batteryCharging,
+              C.green,
+              d.readiness,
+              l?.homeReadinessNotScored ?? 'Not scored',
+              l,
               // The same shortfall sentence the Readiness detail screen's
               // banner shows, off the SAME stored diagnostic — _gap's own
               // whyFromNote(m.note) doesn't recognise the need_inputs:
@@ -1049,32 +1173,70 @@ _RingState _ringOf(HomeRingKind k, HomeData d, AppLocalizations? l) {
               // not "Readiness", and the sentence should say what the ring
               // itself says. The second translator covers the z-cap absence
               // shape readinessInputShortfallNote alone doesn't (PR #510).
-              fallbackWhy: readinessInputShortfallNote(d.absentDiag,
-                      metricName: 'recovery') ??
+              fallbackWhy:
+                  readinessInputShortfallNote(
+                    d.absentDiag,
+                    metricName: 'recovery',
+                  ) ??
                   readinessUnstableBaselineNote(
-                      d.absentDiag?['note']?.toString(),
-                      metricName: 'recovery') ??
-                  '')
-          : _RingState(k, l?.homeRingRecovery ?? 'Recovery',
-              LucideIcons.batteryCharging, band.color,
-              value: '${v.round()}', sub: band.label, frac: v / 100);
+                    d.absentDiag?['note']?.toString(),
+                    metricName: 'recovery',
+                  ) ??
+                  '',
+            )
+          : _RingState(
+              k,
+              l?.homeRingRecovery ?? 'Recovery',
+              LucideIcons.batteryCharging,
+              band.color,
+              value: '${v.round()}',
+              sub: band.label,
+              frac: v / 100,
+            );
     case HomeRingKind.strain:
       final v = d.strain.value;
       // 0–21 is the scale's own ceiling, not a target invented here.
       return v == null
-          ? _gap(k, l?.homeRingStrain ?? 'Strain', LucideIcons.zap, C.purple,
-              d.strain, l?.homeRingNoStrain ?? 'No strain', l, unit: 'days')
-          : _RingState(k, l?.homeRingStrain ?? 'Strain', LucideIcons.zap, C.purple,
-              value: displayFixed(v, 1), sub: l?.homeStrainOf21 ?? 'of 21', frac: v / 21);
+          ? _gap(
+              k,
+              l?.homeRingStrain ?? 'Strain',
+              LucideIcons.zap,
+              C.purple,
+              d.strain,
+              l?.homeRingNoStrain ?? 'No strain',
+              l,
+              unit: 'days',
+            )
+          : _RingState(
+              k,
+              l?.homeRingStrain ?? 'Strain',
+              LucideIcons.zap,
+              C.purple,
+              value: displayFixed(v, 1),
+              sub: l?.homeStrainOf21 ?? 'of 21',
+              frac: v / 21,
+            );
     case HomeRingKind.sleep:
       final v = d.sleepMin.value;
       final need = d.sleepNeedMin.value;
       return v == null
-          ? _gap(k, l?.homeRingSleep ?? 'Sleep', LucideIcons.moon, C.blue,
-              d.sleepMin, l?.homeRingNoSleep ?? 'No sleep', l,
-              fallbackWhy: l?.homeSleepGapFallback ??
-                  'No night long enough to score was recorded.')
-          : _RingState(k, l?.homeRingSleep ?? 'Sleep', LucideIcons.moon, C.blue,
+          ? _gap(
+              k,
+              l?.homeRingSleep ?? 'Sleep',
+              LucideIcons.moon,
+              C.blue,
+              d.sleepMin,
+              l?.homeRingNoSleep ?? 'No sleep',
+              l,
+              fallbackWhy:
+                  l?.homeSleepGapFallback ??
+                  'No night long enough to score was recorded.',
+            )
+          : _RingState(
+              k,
+              l?.homeRingSleep ?? 'Sleep',
+              LucideIcons.moon,
+              C.blue,
               value: hm(v),
               // No computed need means no denominator. The hardcoded 480 in
               // the sleep bundle is not this user's need and must never be
@@ -1082,38 +1244,59 @@ _RingState _ringOf(HomeRingKind k, HomeData d, AppLocalizations? l) {
               sub: need == null
                   ? (l?.homeSleepNoTarget ?? 'No target yet')
                   : (l?.homeOfSpan(hm(need)) ?? 'of ${hm(need)}'),
-              frac: need == null || need <= 0 ? null : v / need);
+              frac: need == null || need <= 0 ? null : v / need,
+            );
   }
 }
 
 /// The absent half: calibrating when the note says the gate is a baseline
 /// still filling, otherwise the absence and its reason.
-_RingState _gap(HomeRingKind k, String label, IconData icon, Color color,
-    Metric m, String word, AppLocalizations? l,
-    {String unit = 'nights', String fallbackWhy = ''}) {
+_RingState _gap(
+  HomeRingKind k,
+  String label,
+  IconData icon,
+  Color color,
+  Metric m,
+  String word,
+  AppLocalizations? l, {
+  String unit = 'nights',
+  String fallbackWhy = '',
+}) {
   final counts = baselineCountsFromNote(m.note);
   if (counts != null) {
-    return _RingState(k, label, icon, color,
-        value: l?.homeCalibrating ?? 'Learning your usual',
-        sub: unit == 'days'
-            ? (l?.homeCalibratingDays(counts.have, counts.need) ??
+    return _RingState(
+      k,
+      label,
+      icon,
+      color,
+      value: l?.homeCalibrating ?? 'Learning your usual',
+      sub: unit == 'days'
+          ? (l?.homeCalibratingDays(counts.have, counts.need) ??
                 '${counts.have} of ${counts.need} days')
-            : (l?.homeCalibratingNights(counts.have, counts.need) ??
+          : (l?.homeCalibratingNights(counts.have, counts.need) ??
                 '${counts.have} of ${counts.need} nights'),
-        frac: (counts.have / counts.need).clamp(0.0, 1.0),
-        calibrating: true,
-        have: counts.have,
-        need: counts.need);
+      frac: (counts.have / counts.need).clamp(0.0, 1.0),
+      calibrating: true,
+      have: counts.have,
+      need: counts.need,
+    );
   }
-  return _RingState(k, label, icon, color,
-      value: word,
-      // THE PIPELINE'S REASON FIRST. A sentence written here by someone who
-      // never saw the day is the fallback, and where there is neither the ring
-      // says it does not know rather than guessing a cause.
-      why: whyFromNote(m.note, unit: unit) ??
-          (fallbackWhy.isNotEmpty
-              ? fallbackWhy
-              : (l?.homeGapNoReason ?? 'Nothing recorded says why this is missing.')));
+  return _RingState(
+    k,
+    label,
+    icon,
+    color,
+    value: word,
+    // THE PIPELINE'S REASON FIRST. A sentence written here by someone who
+    // never saw the day is the fallback, and where there is neither the ring
+    // says it does not know rather than guessing a cause.
+    why:
+        whyFromNote(m.note, unit: unit) ??
+        (fallbackWhy.isNotEmpty
+            ? fallbackWhy
+            : (l?.homeGapNoReason ??
+                  'Nothing recorded says why this is missing.')),
+  );
 }
 
 /// The dial itself. An empty [frac] draws the track and nothing else — which is
@@ -1127,22 +1310,36 @@ class _Dial extends StatelessWidget {
   @override
   Widget build(BuildContext c) {
     final p = P.of(c);
-    return Stack(alignment: Alignment.center, children: [
-      CustomPaint(
-        size: Size.infinite,
-        // Calibrating draws as discrete dashes filling in night by night;
-        // a finished (or absent-but-not-calibrating) ring draws the
-        // continuous arc, solid only once it is an actual measurement.
-        painter: r.calibrating
-            // One dash per night the baseline needs, not a fixed count —
-            // "6 of 14" draws as 14 divisions with 6 filled.
-            ? DashedRing(r.frac ?? 0, r.arc(p), p.track,
-                stroke: stroke, segments: r.need ?? 24)
-            : Ring(r.frac ?? 0, r.arc(p), p.track,
-                stroke: stroke, t: animate(c, 1), solid: r.measured),
-      ),
-      Icon(r.icon, size: icon, color: r.ink(p)),
-    ]);
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        CustomPaint(
+          size: Size.infinite,
+          // Calibrating draws as discrete dashes filling in night by night;
+          // a finished (or absent-but-not-calibrating) ring draws the
+          // continuous arc, solid only once it is an actual measurement.
+          painter: r.calibrating
+              // One dash per night the baseline needs, not a fixed count —
+              // "6 of 14" draws as 14 divisions with 6 filled.
+              ? DashedRing(
+                  r.frac ?? 0,
+                  r.arc(p),
+                  p.track,
+                  stroke: stroke,
+                  segments: r.need ?? 24,
+                )
+              : Ring(
+                  r.frac ?? 0,
+                  r.arc(p),
+                  p.track,
+                  stroke: stroke,
+                  t: animate(c, 1),
+                  solid: r.measured,
+                ),
+        ),
+        Icon(r.icon, size: icon, color: r.ink(p)),
+      ],
+    );
   }
 }
 
@@ -1157,20 +1354,22 @@ class _RingColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext c) => Pressable(
-        onTap: onTap,
-        semanticLabel: r.spoken,
-        child: Column(children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 96),
-            child: AspectRatio(
-              aspectRatio: 1,
-              child: _Dial(r, stroke: 7, icon: 20),
-            ),
+    onTap: onTap,
+    semanticLabel: r.spoken,
+    child: Column(
+      children: [
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 96),
+          child: AspectRatio(
+            aspectRatio: 1,
+            child: _Dial(r, stroke: 7, icon: 20),
           ),
-          const SizedBox(height: S.x3),
-          _RingText(r, align: TextAlign.center),
-        ]),
-      );
+        ),
+        const SizedBox(height: S.x3),
+        _RingText(r, align: TextAlign.center),
+      ],
+    ),
+  );
 }
 
 /// The accessibility layout: ring left, type in the width it needs.
@@ -1182,21 +1381,19 @@ class _RingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext c) => Pressable(
-        onTap: onTap,
-        semanticLabel: r.spoken,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: S.x2),
-          child: Row(children: [
-            SizedBox(
-              width: 56,
-              height: 56,
-              child: _Dial(r, stroke: 5, icon: 15),
-            ),
-            const SizedBox(width: S.x3),
-            Expanded(child: _RingText(r, align: TextAlign.start)),
-          ]),
-        ),
-      );
+    onTap: onTap,
+    semanticLabel: r.spoken,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: S.x2),
+      child: Row(
+        children: [
+          SizedBox(width: 56, height: 56, child: _Dial(r, stroke: 5, icon: 15)),
+          const SizedBox(width: S.x3),
+          Expanded(child: _RingText(r, align: TextAlign.start)),
+        ],
+      ),
+    ),
+  );
 }
 
 class _RingText extends StatelessWidget {
@@ -1211,9 +1408,14 @@ class _RingText extends StatelessWidget {
     final cross = align == TextAlign.center
         ? CrossAxisAlignment.center
         : CrossAxisAlignment.start;
-    return Column(crossAxisAlignment: cross, children: [
-      Text(r.label.toUpperCase(),
-          style: F.over.copyWith(color: p.ink3), textAlign: align),
+    return Column(
+      crossAxisAlignment: cross,
+      children: [
+        Text(
+          r.label.toUpperCase(),
+          style: F.over.copyWith(color: p.ink3),
+          textAlign: align,
+        ),
         const SizedBox(height: S.x1),
         // Absent reads as words, never as a dash and never as a zero — so it
         // takes the sentence weight rather than the numeral one.
@@ -1263,10 +1465,13 @@ class _GapRow extends StatelessWidget {
               child: Text.rich(
                 TextSpan(
                   children: [
-                TextSpan(
-                    text: '${r.label} · ',
-                    style: F.cap.copyWith(
-                        color: p.ink2, fontWeight: FontWeight.w600)),
+                    TextSpan(
+                      text: '${r.label} · ',
+                      style: F.cap.copyWith(
+                        color: p.ink2,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     TextSpan(
                       text: presentationText(
                         AppLocalizations.of(c),
@@ -1375,29 +1580,29 @@ class HomeData {
   /// travel as a set on purpose — they are read as one envelope, and setting
   /// one without the others describes a state the pipeline cannot produce.
   HomeData copyOrIllness(String? state, String? day, double? z) => HomeData(
-        name: name,
-        dayId: dayId,
-        readiness: readiness,
-        drivers: drivers,
-        sleepMin: sleepMin,
-        rhr: rhr,
-        steps: steps,
-        calories: calories,
-        caloriesTotal: caloriesTotal,
-        strain: strain,
-        stepGoal: stepGoal,
-        sleepNeedMin: sleepNeedMin,
-        bedtime: bedtime,
-        strainTarget: strainTarget,
-        heldOverNight: heldOverNight,
-        illnessState: state,
-        illnessDay: day,
-        illnessZ: z,
-        insightsStale: insightsStale,
-        absentDiag: absentDiag,
-        recoveryState: recoveryState,
-        readinessUpdate: readinessUpdate,
-      );
+    name: name,
+    dayId: dayId,
+    readiness: readiness,
+    drivers: drivers,
+    sleepMin: sleepMin,
+    rhr: rhr,
+    steps: steps,
+    calories: calories,
+    caloriesTotal: caloriesTotal,
+    strain: strain,
+    stepGoal: stepGoal,
+    sleepNeedMin: sleepNeedMin,
+    bedtime: bedtime,
+    strainTarget: strainTarget,
+    heldOverNight: heldOverNight,
+    illnessState: state,
+    illnessDay: day,
+    illnessZ: z,
+    insightsStale: insightsStale,
+    absentDiag: absentDiag,
+    recoveryState: recoveryState,
+    readinessUpdate: readinessUpdate,
+  );
 
   /// A day OTHER than today, for the Home day switcher.
   ///
@@ -1409,16 +1614,21 @@ class HomeData {
   /// date-parameterized getters the strain/sleep detail screens already read
   /// ([LocalRepository.getDayStrain]/[getDaySleepV2]) plus the one figure
   /// neither carries ([getDayOverview]'s readiness/resting_hr).
-  static Future<HomeData> loadForDay(LocalRepository repo, String date,
-      [AppLocalizations? l]) async {
+  static Future<HomeData> loadForDay(
+    LocalRepository repo,
+    String date, [
+    AppLocalizations? l,
+  ]) async {
     final profile = await repo.getProfile();
     // The three getters read the same stored day: decode it once, not three
     // times per arrow tap.
-    final (overview, strain, sleep) = await repo.sharingDayReads(() async => (
-          await repo.getDayOverview(date),
-          await repo.getDayStrain(date),
-          await repo.getDaySleepV2(date),
-        ));
+    final (overview, strain, sleep) = await repo.sharingDayReads(
+      () async => (
+        await repo.getDayOverview(date),
+        await repo.getDayStrain(date),
+        await repo.getDaySleepV2(date),
+      ),
+    );
     final readiness = metricOf(overview['readiness']);
     // Same lookup [load] does for today, for the same reason: the ring's
     // shortfall explanation needs the stored diagnostic, and a day the
@@ -1445,7 +1655,10 @@ class HomeData {
     );
   }
 
-  static Future<HomeData> load(LocalRepository repo, [AppLocalizations? l]) async {
+  static Future<HomeData> load(
+    LocalRepository repo, [
+    AppLocalizations? l,
+  ]) async {
     final today = await repo.getToday();
     final cd = await repo.getInsights();
     final profile = await repo.getProfile();
@@ -1486,7 +1699,8 @@ class HomeData {
     final absentDiag = readiness.value != null
         ? null
         : await LocalDb.readinessAbsentDiag(
-            (today['status'] as Map?)?['today_day']?.toString());
+            (today['status'] as Map?)?['today_day']?.toString(),
+          );
 
     return HomeData(
       name: profile['name']?.toString(),
@@ -1498,7 +1712,8 @@ class HomeData {
       readiness: readiness,
       absentDiag: absentDiag,
       recoveryState: recoveryState,
-      readinessUpdate: (head['recovery_update'] as Map?)?.cast<String, dynamic>(),
+      readinessUpdate: (head['recovery_update'] as Map?)
+          ?.cast<String, dynamic>(),
       drivers: [
         for (final e in (gbDrivers is List ? gbDrivers : const []))
           if (e is Map) e.cast<String, dynamic>(),
@@ -1512,10 +1727,15 @@ class HomeData {
       stepGoal: (today['step_goal'] as num?)?.toInt() ?? kDefaultStepGoal,
       // sleep_coach.need is the COMPUTED need. `sleep.need_min` is a hardcoded
       // 480 and must never be shown as "your sleep need".
-      sleepNeedMin: envMetric(needEnv, needSec == null ? null : needSec / 60,
-          unit: 'min'),
+      sleepNeedMin: envMetric(
+        needEnv,
+        needSec == null ? null : needSec / 60,
+        unit: 'min',
+      ),
       bedtime: envMetric(
-          bedEnv, envValue(bedEnv)?['bedtime_min_of_day'] as num?),
+        bedEnv,
+        envValue(bedEnv)?['bedtime_min_of_day'] as num?,
+      ),
       strainTarget: strain is Map && strain['strain_target'] is Map
           ? (strain['strain_target'] as Map).cast<String, dynamic>()
           : null,
@@ -1542,8 +1762,13 @@ class HomeScreen extends StatefulWidget {
   /// calendar, so a test of "a day later" needs to move it.
   final DateTime? now;
 
-  const HomeScreen(
-      {super.key, this.data, this.hour, this.workoutLive, this.now});
+  const HomeScreen({
+    super.key,
+    this.data,
+    this.hour,
+    this.workoutLive,
+    this.now,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -1571,8 +1796,7 @@ bool homeReturnsToToday({
   required String? dayAtHide,
   required String dayNow,
   required Duration away,
-}) =>
-    dayAtHide == null || dayAtHide != dayNow || away >= kHomeKeepDayAway;
+}) => dayAtHide == null || dayAtHide != dayNow || away >= kHomeKeepDayAway;
 
 /// How long the app was away, from both clocks Home keeps: the longer one.
 /// The [monotonic] stopwatch stops while the phone sleeps, so a locked
@@ -1677,9 +1901,10 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
     _away.stop();
     _hiddenAt = null;
     final back = homeReturnsToToday(
-        dayAtHide: _dayAtHide,
-        dayNow: todayLabel(widget.now ?? debugHomeWallClock()),
-        away: away);
+      dayAtHide: _dayAtHide,
+      dayNow: todayLabel(widget.now ?? debugHomeWallClock()),
+      away: away,
+    );
     _dayAtHide = null;
     // A past day kept after a short absence needs no read here: if its data
     // changes, the database revision reloads it like any other day.
@@ -1703,7 +1928,9 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
       return;
     }
     _lifecycle = AppLifecycleListener(
-        onHide: _onHide, onRestart: _onReturnFromBackground);
+      onHide: _onHide,
+      onRestart: _onReturnFromBackground,
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
@@ -1733,7 +1960,9 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
           : await HomeData.loadForDay(repo, day, l);
       final days = await repo.availableDays();
       if (stillNewest(#home, t)) {
-        setState(() => (_d = d, _days = days, _loading = false, _failed = false));
+        setState(
+          () => (_d = d, _days = days, _loading = false, _failed = false),
+        );
       }
     } catch (_) {
       if (stillNewest(#home, t)) {
@@ -1797,16 +2026,18 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
     if (syncing) {
       return StatusCard(
         l?.homeSyncingTitle ?? 'Syncing with your band',
-        l?.homeSyncingBody ?? 'Pulling data now — this can take a few minutes '
-            'on a full backlog.',
+        l?.homeSyncingBody ??
+            'Pulling data now — this can take a few minutes '
+                'on a full backlog.',
         leading: spinner,
       );
     }
     if (deriving) {
       return StatusCard(
         l?.homeAnalyzingTitle ?? 'Crunching last night\'s numbers',
-        l?.homeAnalyzingBody ?? 'The data is in — sleep, recovery and strain '
-            'are next.',
+        l?.homeAnalyzingBody ??
+            'The data is in — sleep, recovery and strain '
+                'are next.',
         leading: spinner,
       );
     }
@@ -1820,8 +2051,12 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
     return null;
   }
 
-  Widget _bareStatusCard(BuildContext c, HomeData d, AppLocalizations? l,
-      {required bool pastDay}) {
+  Widget _bareStatusCard(
+    BuildContext c,
+    HomeData d,
+    AppLocalizations? l, {
+    required bool pastDay,
+  }) {
     // A PAST day with nothing on it is a settled fact, not a sync problem —
     // "Sync the band" and the derive-phase cards below are both about THIS
     // install's live pipeline catching up, which has nothing to do with a day
@@ -1844,10 +2079,11 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
           ? (l?.homeNothingDerivedTitle ?? 'No nights scored yet')
           : (l?.homeNothingTodayTitle ?? 'Nothing recorded for today'),
       d.heldOverNight == null
-          ? (l?.homeNothingDerivedBody ?? 'Wear the band tonight and open the app in the morning.')
+          ? (l?.homeNothingDerivedBody ??
+                'Wear the band tonight and open the app in the morning.')
           : (l?.homeNothingTodayBody(prettyDay(d.heldOverNight, l)) ??
-              'The last night this app scored was '
-                  '${prettyDay(d.heldOverNight, l)}. Nothing has reached it since.'),
+                'The last night this app scored was '
+                    '${prettyDay(d.heldOverNight, l)}. Nothing has reached it since.'),
       fix: sync == null ? '' : (l?.homeSyncBand ?? 'Sync the band'),
       icon: LucideIcons.watch,
       onFix: sync == null ? null : () => _tapSync(sync),
@@ -1856,17 +2092,36 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
 
   /// Morning / afternoon / evening / night. One split at 18:00 greeted 00:30
   /// and 15:40 alike with "Good morning" beside a sun.
-  ({String word, IconData icon, Color color}) _greeting(int h, AppLocalizations? l) {
+  ({String word, IconData icon, Color color}) _greeting(
+    int h,
+    AppLocalizations? l,
+  ) {
     if (h < 5) {
-      return (word: l?.homeGreetingStillUp ?? 'Still up', icon: LucideIcons.moon, color: C.indigo);
+      return (
+        word: l?.homeGreetingStillUp ?? 'Still up',
+        icon: LucideIcons.moon,
+        color: C.indigo,
+      );
     }
     if (h < 12) {
-      return (word: l?.homeGreetingMorning ?? 'Good morning', icon: LucideIcons.sun, color: C.yellow);
+      return (
+        word: l?.homeGreetingMorning ?? 'Good morning',
+        icon: LucideIcons.sun,
+        color: C.yellow,
+      );
     }
     if (h < 18) {
-      return (word: l?.homeGreetingAfternoon ?? 'Good afternoon', icon: LucideIcons.sun, color: C.orange);
+      return (
+        word: l?.homeGreetingAfternoon ?? 'Good afternoon',
+        icon: LucideIcons.sun,
+        color: C.orange,
+      );
     }
-    return (word: l?.homeGreetingEvening ?? 'Good evening', icon: LucideIcons.moon, color: C.indigo);
+    return (
+      word: l?.homeGreetingEvening ?? 'Good evening',
+      icon: LucideIcons.moon,
+      color: C.indigo,
+    );
   }
 
   @override
@@ -1877,74 +2132,88 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
     final g = _greeting(widget.hour ?? DateTime.now().hour, l);
 
     if (d == null) {
-      return _refreshable(ListView(padding: pad, children: [
-        const SizedBox(height: S.x8),
-        // No day on screen ⇒ no `todayId`, so this renders the dated form.
-        // Shown here TOO: a first run, a failed read and a sync in flight are
-        // exactly when "how far are we?" is worth answering, and the header
-        // this line normally sits under does not exist on this path.
-        Align(alignment: Alignment.centerLeft, child: syncedThroughLine(c, null, l)),
-        // The battery reading lives on AppState.device, independent of
-        // HomeData — a load failure or first run must not hide it too.
-        if (batteryLine(c) case final battery?) ...[
-          const SizedBox(height: 2),
-          Align(alignment: Alignment.centerLeft, child: battery),
-        ],
-        const SizedBox(height: S.x3),
-        const DetectedActivitiesCard(),
-        if (_loading)
-          const Center(child: CircularProgressIndicator())
-        else if (_failed)
-          StatusCard(
-            _day == null
-                ? (l?.homeLoadFailedTitle ?? 'Today could not be read')
-                : (l?.homeDayLoadFailedTitle(prettyDay(_day, l)) ??
-                    '${prettyDay(_day, l)} could not be read'),
-            l?.homeLoadFailedBody ??
-                'The stored day failed to load. Nothing was deleted — this is a '
-                'read that went wrong, not missing data.',
-            fix: l?.homeTryAgain ?? 'Try again',
-            icon: LucideIcons.databaseZap,
-            onFix: () {
-              setState(() => (_loading = true, _failed = false));
-              _load();
-            },
-          )
-        else
-          Builder(builder: (c) {
-            final phase = _phaseStatusCard(c, l);
-            if (phase != null) return phase;
-            if (noBandCard(c, l) case final noBand?) return noBand;
-            final sync = syncOf(c);
-            return StatusCard(
-              l?.homeNothingDerivedTitle ?? 'No nights scored yet',
-              l?.homeNothingDerivedBody ?? 'Wear the band tonight and open the app in the morning.',
-              fix: sync == null ? '' : (l?.homeSyncBand ?? 'Sync the band'),
-              icon: LucideIcons.watch,
-              onFix: sync == null ? null : () => _tapSync(sync),
-            );
-          }),
-        // A failed read of a day stepped back onto has no stepper on this
-        // path, so this is the way home.
-        if (_day != null && _day != todayLabel())
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton(
-              onPressed: () => _goDay(todayLabel()),
-              child: Text(l?.homeBackToToday ?? 'Back to today'),
+      return _refreshable(
+        ListView(
+          padding: pad,
+          children: [
+            const SizedBox(height: S.x8),
+            // No day on screen ⇒ no `todayId`, so this renders the dated form.
+            // Shown here TOO: a first run, a failed read and a sync in flight are
+            // exactly when "how far are we?" is worth answering, and the header
+            // this line normally sits under does not exist on this path.
+            Align(
+              alignment: Alignment.centerLeft,
+              child: syncedThroughLine(c, null, l),
             ),
-          ),
-        if (!_loading && !_failed && widget.data == null) ...[
-          const SizedBox(height: S.x3),
-          firstWeekCard(c, days: _days.length, strainScored: false),
-        ],
-        // The alarm lives on AppState too, so a load failure must not hide it.
-        if (_day == null || _day == todayLabel())
-          if (alarmArmOfContext(c) case final (DateTime?, AlarmArmState) a) ...[
+            // The battery reading lives on AppState.device, independent of
+            // HomeData — a load failure or first run must not hide it too.
+            if (batteryLine(c) case final battery?) ...[
+              const SizedBox(height: 2),
+              Align(alignment: Alignment.centerLeft, child: battery),
+            ],
             const SizedBox(height: S.x3),
-            alarmDoor(c, a.$1, a.$2),
+            const DetectedActivitiesCard(),
+            if (_loading)
+              const Center(child: CircularProgressIndicator())
+            else if (_failed)
+              StatusCard(
+                _day == null
+                    ? (l?.homeLoadFailedTitle ?? 'Today could not be read')
+                    : (l?.homeDayLoadFailedTitle(prettyDay(_day, l)) ??
+                          '${prettyDay(_day, l)} could not be read'),
+                l?.homeLoadFailedBody ??
+                    'The stored day failed to load. Nothing was deleted — this is a '
+                        'read that went wrong, not missing data.',
+                fix: l?.homeTryAgain ?? 'Try again',
+                icon: LucideIcons.databaseZap,
+                onFix: () {
+                  setState(() => (_loading = true, _failed = false));
+                  _load();
+                },
+              )
+            else
+              Builder(
+                builder: (c) {
+                  final phase = _phaseStatusCard(c, l);
+                  if (phase != null) return phase;
+                  if (noBandCard(c, l) case final noBand?) return noBand;
+                  final sync = syncOf(c);
+                  return StatusCard(
+                    l?.homeNothingDerivedTitle ?? 'No nights scored yet',
+                    l?.homeNothingDerivedBody ??
+                        'Wear the band tonight and open the app in the morning.',
+                    fix: sync == null
+                        ? ''
+                        : (l?.homeSyncBand ?? 'Sync the band'),
+                    icon: LucideIcons.watch,
+                    onFix: sync == null ? null : () => _tapSync(sync),
+                  );
+                },
+              ),
+            // A failed read of a day stepped back onto has no stepper on this
+            // path, so this is the way home.
+            if (_day != null && _day != todayLabel())
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: () => _goDay(todayLabel()),
+                  child: Text(l?.homeBackToToday ?? 'Back to today'),
+                ),
+              ),
+            if (!_loading && !_failed && widget.data == null) ...[
+              const SizedBox(height: S.x3),
+              firstWeekCard(c, days: _days.length, strainScored: false),
+            ],
+            // The alarm lives on AppState too, so a load failure must not hide it.
+            if (_day == null || _day == todayLabel())
+              if (alarmArmOfContext(c)
+                  case final (DateTime?, AlarmArmState) a) ...[
+                const SizedBox(height: S.x3),
+                alarmDoor(c, a.$1, a.$2),
+              ],
           ],
-      ]));
+        ),
+      );
     }
 
     // Nothing measured at all. It used to be reachable ONLY by a load throwing
@@ -1957,7 +2226,8 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
     // them apart: whether this install has ever scored a night. "No band
     // recordings processed yet" said to someone with three months of history is
     // the first-run answer to a gap, and it is wrong.
-    final bare = d.readiness.isEmpty &&
+    final bare =
+        d.readiness.isEmpty &&
         d.sleepMin.isEmpty &&
         d.strain.isEmpty &&
         d.rhr.isEmpty &&
@@ -1973,7 +2243,8 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
     // Also while the readiness note still counts nights: missed nights push
     // the first score past the day-15 the count alone would show.
     final recoveryNightsLeft = needMoreNightsFromNote(d.readiness.note);
-    final firstWeeks = isToday &&
+    final firstWeeks =
+        isToday &&
         widget.data == null &&
         d.readiness.isEmpty &&
         (_days.length <= readinessCompositeMinBaseline ||
@@ -1984,223 +2255,257 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
     // to start, that outranks anything else this screen has to say today.
     final rebuilt = dbRebuiltCard(dbRebuildOf(c), l);
 
-    return _refreshable(ListView(padding: pad, children: [
-      if (rebuilt != null) ...[const SizedBox(height: S.x3), rebuilt],
+    return _refreshable(
+      ListView(
+        padding: pad,
+        children: [
+          if (rebuilt != null) ...[const SizedBox(height: S.x3), rebuilt],
 
-      // ── the one observation Home is allowed to make ──
-      //
-      // OUTSIDE the derived / not-derived split, and above the rings, for two
-      // separate reasons. It outranks them: when this fires it is what matters
-      // today, which is the question this screen answers, and under them it
-      // would read as a footnote to three numbers. And it does not depend on
-      // them — the watch comes off the CROSSDAY rollup, so it can carry a real
-      // state on a morning whose own bundle has not derived yet, which is
-      // exactly the morning you would most want to be told.
-      ...?_bodyWatch(c, d, todayLabel(widget.now)),
-      // ── greeting ──
-      Padding(
-        padding: const EdgeInsets.only(top: S.x3, bottom: S.x5),
-        child: Row(children: [
-          Expanded(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Flexible(
-                  child: Text(
-                    d.name == null || d.name!.isEmpty
-                        ? g.word
-                        : '${g.word}, ${d.name}',
-                    style: F.t2.copyWith(color: p.ink),
+          // ── the one observation Home is allowed to make ──
+          //
+          // OUTSIDE the derived / not-derived split, and above the rings, for two
+          // separate reasons. It outranks them: when this fires it is what matters
+          // today, which is the question this screen answers, and under them it
+          // would read as a footnote to three numbers. And it does not depend on
+          // them — the watch comes off the CROSSDAY rollup, so it can carry a real
+          // state on a morning whose own bundle has not derived yet, which is
+          // exactly the morning you would most want to be told.
+          ...?_bodyWatch(c, d, todayLabel(widget.now)),
+          // ── greeting ──
+          Padding(
+            padding: const EdgeInsets.only(top: S.x3, bottom: S.x5),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              d.name == null || d.name!.isEmpty
+                                  ? g.word
+                                  : '${g.word}, ${d.name}',
+                              style: F.t2.copyWith(color: p.ink),
+                            ),
+                          ),
+                          const SizedBox(width: S.x2),
+                          Icon(g.icon, size: 17, color: p.on(g.color)),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        prettyDay(d.dayId, l),
+                        style: F.cap.copyWith(color: p.ink3),
+                      ),
+                      // How far the band's data reaches, always — the question "am I
+                      // looking at today, or at last night?" used to be answerable
+                      // only by opening Profile > Devices.
+                      syncedThroughLine(c, d.dayId, l),
+                      // Its own line, not squeezed into the sync line's row: at
+                      // accessibility text sizes that row has no slack left, and
+                      // `Expanded` would only shrink the sync text into extra wrapped
+                      // lines to make room rather than ever actually overflow.
+                      if (batteryLine(c) case final battery?) ...[
+                        const SizedBox(height: 2),
+                        battery,
+                      ],
+                    ],
                   ),
                 ),
-                const SizedBox(width: S.x2),
-                Icon(g.icon, size: 17, color: p.on(g.color)),
-              ]),
-              const SizedBox(height: 2),
-              Text(prettyDay(d.dayId, l), style: F.cap.copyWith(color: p.ink3)),
-              // How far the band's data reaches, always — the question "am I
-              // looking at today, or at last night?" used to be answerable
-              // only by opening Profile > Devices.
-              syncedThroughLine(c, d.dayId, l),
-              // Its own line, not squeezed into the sync line's row: at
-              // accessibility text sizes that row has no slack left, and
-              // `Expanded` would only shrink the sync text into extra wrapped
-              // lines to make room rather than ever actually overflow.
-              if (batteryLine(c) case final battery?) ...[
-                const SizedBox(height: 2),
-                battery,
+                const SizedBox(width: S.x3),
+                // The coach moved to its own chip under the plan, and Profile is the
+                // same avatar every tab carries.
+                const ProfileAvatar(accent: C.domHome),
               ],
-            ]),
+            ),
           ),
-          const SizedBox(width: S.x3),
-          // The coach moved to its own chip under the plan, and Profile is the
-          // same avatar every tab carries.
-          const ProfileAvatar(accent: C.domHome),
-        ]),
-      ),
 
-      if (bare) ...[
-        const DetectedActivitiesCard(),
-      ],
-      ...dayNavRow(_day ?? d.dayId, _days, _goDay),
-      // Stepped back through the record: one tap home.
-      if (!isToday)
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton(
-            onPressed: () => _goDay(todayLabel()),
-            child: Text(l?.homeBackToToday ?? 'Back to today'),
-          ),
-        ),
-      // A sync or a derive in flight on an ordinary morning. It used to show
-      // only on a bare day, so yesterday's rings sat on screen during a sync
-      // with nothing but a grey "Synced through" line to say anything moved.
-      if (!bare && isToday)
-        if (_phaseStatusCard(c, l) case final phase?) ...[
-          phase,
-          const SizedBox(height: S.x3),
-        ],
-      // The active wearable's day, cell by cell. Nothing on a WHOOP-only
-      // install, nor when the screen is handed its data.
-      if (widget.data == null)
-        WearableCells(kHomeWearableRows, date: isToday ? null : _day),
+          if (bare) ...[const DetectedActivitiesCard()],
+          ...dayNavRow(_day ?? d.dayId, _days, _goDay),
+          // Stepped back through the record: one tap home.
+          if (!isToday)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: () => _goDay(todayLabel()),
+                child: Text(l?.homeBackToToday ?? 'Back to today'),
+              ),
+            ),
+          // A sync or a derive in flight on an ordinary morning. It used to show
+          // only on a bare day, so yesterday's rings sat on screen during a sync
+          // with nothing but a grey "Synced through" line to say anything moved.
+          if (!bare && isToday)
+            if (_phaseStatusCard(c, l) case final phase?) ...[
+              phase,
+              const SizedBox(height: S.x3),
+            ],
+          // The active wearable's day, cell by cell. Nothing on a WHOOP-only
+          // install, nor when the screen is handed its data.
+          if (widget.data == null)
+            WearableCells(kHomeWearableRows, date: isToday ? null : _day),
 
-      if (bare) ...[
-        // A live workout holds derivation, so a bare day with a session open
-        // is the hold at work, not a sync problem — see [workoutHoldCard].
-        // Only for TODAY: a live workout right now says nothing about why a
-        // PAST day the switcher stepped onto has nothing on it.
-        isToday && (widget.workoutLive ?? workoutLiveOf(c))
-            ? workoutHoldCard(l)
-            : _bareStatusCard(c, d, l, pastDay: !isToday),
-        // The first morning is exactly when "when do I get numbers?" is
-        // loudest.
-        if (firstWeeks) ...[
-          const SizedBox(height: S.x3),
-          firstWeekCard(c,
-              days: _days.length,
-              strainScored: false,
-              recoveryNightsLeft: recoveryNightsLeft),
-        ],
-      ] else ...[
-        // ── the three rings ──
-        //
-        // Recovery, strain and sleep, each a door into its own screen. They
-        // render as long as ONE of them has something to draw — a trio of
-        // empty circles says less than the one written absence below, and the
-        // empty state is a DOOR, not a dead end. The pipeline records why
-        // readiness came back absent on every day it does — which input was
-        // missing, how many of your own nights are behind each one — and that
-        // diagnostic used to go nowhere but a Firebase breadcrumb. It belongs
-        // one tap away, on the Readiness screen: a wall of per-input
-        // diagnostics on Home makes the app read as broken.
-        if (RingTrio.has(d))
-          RingTrio(
-            d: d,
-            onOpen: (k) => go(
+          if (bare) ...[
+            // A live workout holds derivation, so a bare day with a session open
+            // is the hold at work, not a sync problem — see [workoutHoldCard].
+            // Only for TODAY: a live workout right now says nothing about why a
+            // PAST day the switcher stepped onto has nothing on it.
+            isToday && (widget.workoutLive ?? workoutLiveOf(c))
+                ? workoutHoldCard(l)
+                : _bareStatusCard(c, d, l, pastDay: !isToday),
+            // The first morning is exactly when "when do I get numbers?" is
+            // loudest.
+            if (firstWeeks) ...[
+              const SizedBox(height: S.x3),
+              firstWeekCard(
                 c,
-                switch (k) {
+                days: _days.length,
+                strainScored: false,
+                recoveryNightsLeft: recoveryNightsLeft,
+              ),
+            ],
+          ] else ...[
+            // ── the three rings ──
+            //
+            // Recovery, strain and sleep, each a door into its own screen. They
+            // render as long as ONE of them has something to draw — a trio of
+            // empty circles says less than the one written absence below, and the
+            // empty state is a DOOR, not a dead end. The pipeline records why
+            // readiness came back absent on every day it does — which input was
+            // missing, how many of your own nights are behind each one — and that
+            // diagnostic used to go nowhere but a Firebase breadcrumb. It belongs
+            // one tap away, on the Readiness screen: a wall of per-input
+            // diagnostics on Home makes the app read as broken.
+            if (RingTrio.has(d))
+              RingTrio(
+                d: d,
+                onOpen: (k) => go(c, switch (k) {
                   // A past day's rings open that day's screens: the number
                   // tapped and the number shown must be the same day's.
-                  HomeRingKind.recovery =>
-                    ReadinessDetail(day: isToday ? null : _day),
-                  HomeRingKind.strain =>
-                    DayStrainDetail(day: isToday ? null : _day),
+                  HomeRingKind.recovery => ReadinessDetail(
+                    day: isToday ? null : _day,
+                  ),
+                  HomeRingKind.strain => DayStrainDetail(
+                    day: isToday ? null : _day,
+                  ),
                   // The night the ring was drawn from, not last night. Today
                   // stays null even after the switcher steps back onto it:
                   // today's ring is the held-over night, and only the default
                   // pick resolves to that one.
                   HomeRingKind.sleep => SleepDetail(day: isToday ? null : _day),
                 }),
-          )
-        else
-          Builder(builder: (c) {
-            final need = needMessageFromNote(d.readiness.note);
-            // readinessInputShortfallNote/readinessUnstableBaselineNote off
-            // d.absentDiag are the SAME functions and the SAME stored
-            // diagnostic readiness_detail.dart's banner uses — not a second,
-            // independently-worded explanation — so this card and the detail
-            // screen can never say two different things about the same
-            // absence.
-            final shortfall = need == null
-                ? readinessInputShortfallNote(d.absentDiag) ??
-                    readinessUnstableBaselineNote(
-                        d.absentDiag?['note']?.toString())
-                : null;
-            return StatusCard(
-              l?.homeReadinessNotScoredTitle ?? 'Recovery is not scored today',
-              need != null
-                  ? (l?.homeReadinessNeedBody(need) ??
-                      '$need to know what normal looks like for you.')
-                  // Was "Needs a night of beat-to-beat data, plus your own
-                  // history to compare it to" — a cause, stated for every
-                  // absence the note convention did not cover. The door below
-                  // is what actually answers it.
-                  : shortfall ??
-                      whyFromNote(d.readiness.note) ??
-                      (l?.homeReadinessNoReason ?? 'Nothing recorded says why.'),
-              fix: l?.homeSeeWhatWasMissing ?? 'See what was missing',
-              icon: LucideIcons.batteryCharging,
-              onFix: () =>
-                  go(c, ReadinessDetail(day: isToday ? null : _day)),
-            );
-          }),
+              )
+            else
+              Builder(
+                builder: (c) {
+                  final need = needMessageFromNote(d.readiness.note);
+                  // readinessInputShortfallNote/readinessUnstableBaselineNote off
+                  // d.absentDiag are the SAME functions and the SAME stored
+                  // diagnostic readiness_detail.dart's banner uses — not a second,
+                  // independently-worded explanation — so this card and the detail
+                  // screen can never say two different things about the same
+                  // absence.
+                  final shortfall = need == null
+                      ? readinessInputShortfallNote(d.absentDiag) ??
+                            readinessUnstableBaselineNote(
+                              d.absentDiag?['note']?.toString(),
+                            )
+                      : null;
+                  return StatusCard(
+                    l?.homeReadinessNotScoredTitle ??
+                        'Recovery is not scored today',
+                    need != null
+                        ? (l?.homeReadinessNeedBody(need) ??
+                              '$need to know what normal looks like for you.')
+                        // Was "Needs a night of beat-to-beat data, plus your own
+                        // history to compare it to" — a cause, stated for every
+                        // absence the note convention did not cover. The door below
+                        // is what actually answers it.
+                        : shortfall ??
+                              whyFromNote(d.readiness.note) ??
+                              (l?.homeReadinessNoReason ??
+                                  'Nothing recorded says why.'),
+                    fix: l?.homeSeeWhatWasMissing ?? 'See what was missing',
+                    icon: LucideIcons.batteryCharging,
+                    onFix: () =>
+                        go(c, ReadinessDetail(day: isToday ? null : _day)),
+                  );
+                },
+              ),
 
-        const SizedBox(height: S.x3),
-        const DetectedActivitiesCard(),
-        const CommunityNudge(),
+            // WhoopsBand Overview extras: insight, stress/health tiles, outlook.
+            if (isToday) ...[
+              const SizedBox(height: S.x3),
+              _wbInsight(c, d, l),
+              const SizedBox(height: S.x3),
+              _wbHealthStrip(c, d, l),
+              const SizedBox(height: S.x3),
+              _wbOutlook(c, d, l),
+            ],
 
-        // ── the rollup was withheld, not absent ──
-        if (stale != null) ...[const SizedBox(height: S.x3), stale],
+            const SizedBox(height: S.x3),
+            const DetectedActivitiesCard(),
+            const CommunityNudge(),
 
-        // ── at a glance ──
-        // First, in the first weeks too: resting HR, steps and the night's
-        // sleep are real from night one, so they lead and the "what arrives
-        // when" card follows them.
-        Section(l?.homeAtAGlance ?? 'At a glance',
-            _glance(c, d, isToday: isToday)),
-        if (firstWeeks) ...[
-          const SizedBox(height: S.x3),
-          firstWeekCard(c,
-              days: _days.length,
-              strainScored: !d.strain.isEmpty,
-              recoveryNightsLeft: recoveryNightsLeft),
+            // ── the rollup was withheld, not absent ──
+            if (stale != null) ...[const SizedBox(height: S.x3), stale],
+
+            // ── at a glance ──
+            // First, in the first weeks too: resting HR, steps and the night's
+            // sleep are real from night one, so they lead and the "what arrives
+            // when" card follows them.
+            Section(
+              l?.homeAtAGlance ?? 'At a glance',
+              _glance(c, d, isToday: isToday),
+            ),
+            if (firstWeeks) ...[
+              const SizedBox(height: S.x3),
+              firstWeekCard(
+                c,
+                days: _days.length,
+                strainScored: !d.strain.isEmpty,
+                recoveryNightsLeft: recoveryNightsLeft,
+              ),
+            ],
+
+            // ── today's plan: only what the app can actually stand behind ──
+            // Skipped on a past day — "3,000 steps left" or "aim for 11.4
+            // strain" about a day already over is an instruction, not a fact.
+            if (isToday)
+              Section(l?.homeTodaysPlan ?? 'Daily outlook', _plan(c, p, d)),
+
+            // ── the way into the whole day ──
+            //
+            // A DOOR, NOT A CARD, and that is what keeps it on the right side of
+            // the law at the top of this file. It shows no number, previews no
+            // shape and makes no observation — it names a place and goes there.
+            // Home decides; the day view is where you go to look, and until this
+            // row existed the only ways in were two screens deep.
+            const SizedBox(height: S.x5),
+            detailLinkRow(
+              c,
+              LucideIcons.chartGantt,
+              l?.homeBreakdownTitle ?? 'Breakdown of your day',
+              l?.homeBreakdownSubtitle ?? 'Hour by hour',
+              () => go(c, DayTimelineScreen(day: _day)),
+            ),
+          ],
+
+          // ── the next alarm: a door, same as the one above ──
+          // Only on a bare day: otherwise it is a tile in "At a glance", and the
+          // same alarm twice on one screen is one too many.
+          if (isToday && bare)
+            if (alarmArmOfContext(c)
+                case final (DateTime?, AlarmArmState) a) ...[
+              const SizedBox(height: S.x3),
+              alarmDoor(c, a.$1, a.$2),
+            ],
+          // The coach, set up or not, on every ordinary or bare today.
+          if (isToday) ...[const SizedBox(height: S.x4), coachChip(c)],
         ],
-
-        // ── today's plan: only what the app can actually stand behind ──
-        // Skipped on a past day — "3,000 steps left" or "aim for 11.4
-        // strain" about a day already over is an instruction, not a fact.
-        if (isToday)
-          Section(l?.homeTodaysPlan ?? "Today's plan", _plan(c, p, d)),
-
-        // ── the way into the whole day ──
-        //
-        // A DOOR, NOT A CARD, and that is what keeps it on the right side of
-        // the law at the top of this file. It shows no number, previews no
-        // shape and makes no observation — it names a place and goes there.
-        // Home decides; the day view is where you go to look, and until this
-        // row existed the only ways in were two screens deep.
-        const SizedBox(height: S.x5),
-        detailLinkRow(c, LucideIcons.chartGantt,
-            l?.homeBreakdownTitle ?? 'Breakdown of your day',
-            l?.homeBreakdownSubtitle ?? 'Hour by hour',
-            () => go(c, DayTimelineScreen(day: _day))),
-      ],
-
-      // ── the next alarm: a door, same as the one above ──
-      // Only on a bare day: otherwise it is a tile in "At a glance", and the
-      // same alarm twice on one screen is one too many.
-      if (isToday && bare)
-        if (alarmArmOfContext(c) case final (DateTime?, AlarmArmState) a) ...[
-          const SizedBox(height: S.x3),
-          alarmDoor(c, a.$1, a.$2),
-        ],
-      // The coach, set up or not, on every ordinary or bare today.
-      if (isToday) ...[
-        const SizedBox(height: S.x4),
-        coachChip(c),
-      ],
-    ]));
+      ),
+    );
   }
 
   /// The illness watch, on Home, at amber as well as red.
@@ -2236,20 +2541,24 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
     return [
       Observation(
         state == 'red'
-            ? (l?.homeIllnessRedTitle ?? 'Recent nights add up to a raised resting heart rate')
+            ? (l?.homeIllnessRedTitle ??
+                  'Recent nights add up to a raised resting heart rate')
             : sameNight
-                ? (l?.homeIllnessAmberSameNight ?? 'Last night sat outside your normal range')
-                : (l?.homeIllnessAmberOtherNight(prettyDay(d.illnessDay, l)) ??
-                    '${prettyDay(d.illnessDay, l)} sat outside your normal range'),
+            ? (l?.homeIllnessAmberSameNight ??
+                  'Last night sat outside your normal range')
+            : (l?.homeIllnessAmberOtherNight(prettyDay(d.illnessDay, l)) ??
+                  '${prettyDay(d.illnessDay, l)} sat outside your normal range'),
         z == null
             ? (l?.homeIllnessBodyNoZ ??
-                'Your resting heart rate has run above your usual over recent nights. This tracks one signal, so it shows a pattern, not a cause.')
+                  'Your resting heart rate has run above your usual over recent nights. This tracks one signal, so it shows a pattern, not a cause.')
             : (z >= 0
-                ? (l?.homeIllnessBodyAbove(zAbs) ??
-                    'Recent nights put your resting heart rate above your usual. That night was $zAbs× your normal night-to-night swing above it. A pattern, not a cause.')
-                : (l?.homeIllnessBodyBelow(zAbs) ??
-                    'Recent nights together put your resting heart rate above your usual, even though that night on its own was $zAbs× your normal night-to-night swing below it. A pattern, not a cause.')),
-        advice: l?.homeIllnessAdvice ?? 'Worth noting if it continues past a couple of days.',
+                  ? (l?.homeIllnessBodyAbove(zAbs) ??
+                        'Recent nights put your resting heart rate above your usual. That night was $zAbs× your normal night-to-night swing above it. A pattern, not a cause.')
+                  : (l?.homeIllnessBodyBelow(zAbs) ??
+                        'Recent nights together put your resting heart rate above your usual, even though that night on its own was $zAbs× your normal night-to-night swing below it. A pattern, not a cause.')),
+        advice:
+            l?.homeIllnessAdvice ??
+            'Worth noting if it continues past a couple of days.',
         onTap: () => go(c, const MetricDetail('resting_hr')),
       ),
       const SizedBox(height: S.x3),
@@ -2285,6 +2594,105 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
     await _load();
   }
 
+  /// WhoopsBand insight card — drivers / recovery band, never invented metrics.
+  Widget _wbInsight(BuildContext c, HomeData d, AppLocalizations? l) {
+    final drivers = d.drivers
+        .take(2)
+        .map((e) => driverLabel(e['label'], l))
+        .where((s) => s.isNotEmpty)
+        .toList();
+    final recovery = d.readiness.value;
+    final title = recovery == null
+        ? (l?.homeReadinessNotScoredTitle ?? 'Recovery is still calibrating')
+        : (l?.homeWhyLabel ?? 'What is shaping recovery');
+    final body = recovery == null
+        ? (l?.homeReadinessNoReason ??
+              'Once a few nights land, WhoopsBand will surface the drivers here.')
+        : drivers.isEmpty
+        ? 'Recovery is ${recovery.round()}. Open the ring for the full breakdown.'
+        : 'Recovery is ${recovery.round()}. Leading signals: ${drivers.join(' · ')}.';
+    return WbInsightTile(
+      eyebrow: kWhoopsBandName,
+      title: title,
+      body: body,
+      icon: LucideIcons.sparkles,
+      accent: C.wbRecovery,
+      onTap: () => go(c, ReadinessDetail(day: _day)),
+    );
+  }
+
+  Widget _wbHealthStrip(BuildContext c, HomeData d, AppLocalizations? l) {
+    final rhr = d.rhr.value;
+    // Stress is not always on HomeData; prefer a glance-friendly resting HR +
+    // strain proxy. When RHR is missing, show a quiet placeholder without
+    // inventing bpm (demo values stay in WbDemo for gallery only).
+    final stressProxy = d.strain.value;
+    return Row(
+      children: [
+        Expanded(
+          child: WbMiniMetric(
+            label: l?.homeHeartRate ?? 'Heart rate',
+            value: rhr == null ? '—' : '${rhr.round()}',
+            sub: l?.homeRestingSub ?? 'Resting',
+            icon: LucideIcons.heart,
+            accent: C.red,
+            onTap: rhr == null
+                ? null
+                : () => go(c, const MetricDetail('resting_hr')),
+          ),
+        ),
+        const SizedBox(width: S.x3),
+        Expanded(
+          child: WbMiniMetric(
+            label: l?.healthRowStress ?? 'Day load',
+            value: stressProxy == null ? '—' : displayFixed(stressProxy, 1),
+            sub: l?.homeStrainOf21 ?? 'Strain / 21',
+            icon: LucideIcons.brain,
+            accent: C.wbStress,
+            onTap: stressProxy == null
+                ? null
+                : () => go(c, DayStrainDetail(day: _day)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _wbOutlook(BuildContext c, HomeData d, AppLocalizations? l) {
+    final sleep = d.sleepMin.value;
+    final need = d.sleepNeedMin.value;
+    final strain = d.strain.value;
+    final lines = <String>[];
+    if (sleep != null && need != null) {
+      final delta = (need - sleep).round();
+      lines.add(
+        delta > 15
+            ? 'Last night ran about ${hm(delta)} short of your need.'
+            : 'Last night cleared most of your sleep need.',
+      );
+    }
+    if (strain != null) {
+      lines.add(
+        strain < 8
+            ? 'Day load is still light — room to move if you want it.'
+            : 'Day load is building; keep an eye on how you feel tonight.',
+      );
+    }
+    if (lines.isEmpty) {
+      lines.add(
+        'Sync a night and a stretch of daytime wear to fill this outlook.',
+      );
+    }
+    return WbInsightTile(
+      eyebrow: 'Daily outlook',
+      title: readinessBand(d.readiness.value, l).label,
+      body: lines.join(' '),
+      icon: LucideIcons.sunMedium,
+      accent: C.wbStrain,
+      onTap: () => go(c, ReadinessDetail(day: _day)),
+    );
+  }
+
   Widget _glance(BuildContext c, HomeData d, {required bool isToday}) {
     final l = AppLocalizations.of(c);
     final cards = <Widget>[];
@@ -2308,19 +2716,24 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
     // On a past day every tile is THAT day's, and the trend screen opens on
     // today's window — tapping "11,204" landed on today's count. A past day's
     // tile opens the screen for the day it is showing instead.
-    Widget detail(String key) =>
-        isToday || _day == null ? MetricDetail(key) : metricDayScreen(key, _day!);
+    Widget detail(String key) => isToday || _day == null
+        ? MetricDetail(key)
+        : metricDayScreen(key, _day!);
 
     // Sleep is a RING now, duration and all — the card here was the same
     // number twice on one screen, and the ring is the one that says what the
     // duration was measured against.
     add(
       d.rhr,
-      () => SignalCard(LucideIcons.heart, C.red, l?.homeHeartRate ?? 'Heart rate',
-          '${d.rhr.value!.round()}',
-          unit: 'bpm',
-          sub: l?.homeRestingSub ?? 'Resting',
-          onTap: () => go(c, detail('resting_hr'))),
+      () => SignalCard(
+        LucideIcons.heart,
+        C.red,
+        l?.homeHeartRate ?? 'Heart rate',
+        '${d.rhr.value!.round()}',
+        unit: 'bpm',
+        sub: l?.homeRestingSub ?? 'Resting',
+        onTap: () => go(c, detail('resting_hr')),
+      ),
       // "no sleep was recorded" was stated as fact, unconditionally — and it
       // was rendered directly beside a Sleep card showing that night's
       // duration. Sleep duration and nocturnal RHR are gated separately: a
@@ -2331,62 +2744,83 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
       // resting rate, picked by a human writing copy. Only the branch the
       // screen can actually see is stated; the other defers to the note, or to
       // saying it does not know.
-      () => StatusCard.forMetric(l?.homeNoRestingHr ?? 'No resting heart rate', d.rhr,
-          why: d.sleepMin.isEmpty
-              ? (l?.homeNoRestingHrWhy ??
+      () => StatusCard.forMetric(
+        l?.homeNoRestingHr ?? 'No resting heart rate',
+        d.rhr,
+        why: d.sleepMin.isEmpty
+            ? (l?.homeNoRestingHrWhy ??
                   'Resting heart rate is read from sleep, and no sleep was recorded.')
-              : ''),
+            : '',
+      ),
     );
     // Steps keeps its tile whether or not a counter reported. Zero steps is a
     // real reading — an unmoved counter — and it renders as 0, not as absence.
     // When nothing counted at all the tile stays and says so in two words,
     // rather than the whole card being replaced by a paragraph about wrist
     // motion: the answer to "how many steps" is short either way.
-    cards.add(SignalCard(
-      LucideIcons.footprints,
-      C.green,
-      l?.homeSteps ?? 'Steps',
-      d.steps.value == null ? (l?.homeStepsNone ?? 'None') : thousands(d.steps.value),
-      // The sensor rides the line that is already there rather than adding a
-      // row: the day is resolved per window now, so "8,412" can be the strap's
-      // count, the phone's, or both, and the card has to say which. The split
-      // behind a mixed day is on Nerd stats, one tap down.
-      sub: d.steps.value == null
-          ? (l?.homeStepsNotRecorded ?? 'NOT RECORDED')
-          : [
-              if (d.stepGoal > 0)
-                l?.homeStepsPercentGoal(
-                        ((d.steps.value! / d.stepGoal) * 100).clamp(0, 999).round()) ??
-                    '${((d.steps.value! / d.stepGoal) * 100).clamp(0, 999).round()}% of goal',
-              ?stepSensorLabel(d.steps, l),
-            ].join(' · '),
-      onTap: () => go(c, detail('steps')),
-      trailing: d.steps.value == null || d.stepGoal <= 0
-          ? null
-          : SizedBox(
-              width: 20,
-              height: 20,
-              child: CustomPaint(
-                painter: Ring(d.steps.value! / d.stepGoal, C.green,
+    cards.add(
+      SignalCard(
+        LucideIcons.footprints,
+        C.green,
+        l?.homeSteps ?? 'Steps',
+        d.steps.value == null
+            ? (l?.homeStepsNone ?? 'None')
+            : thousands(d.steps.value),
+        // The sensor rides the line that is already there rather than adding a
+        // row: the day is resolved per window now, so "8,412" can be the strap's
+        // count, the phone's, or both, and the card has to say which. The split
+        // behind a mixed day is on Nerd stats, one tap down.
+        sub: d.steps.value == null
+            ? (l?.homeStepsNotRecorded ?? 'NOT RECORDED')
+            : [
+                if (d.stepGoal > 0)
+                  l?.homeStepsPercentGoal(
+                        ((d.steps.value! / d.stepGoal) * 100)
+                            .clamp(0, 999)
+                            .round(),
+                      ) ??
+                      '${((d.steps.value! / d.stepGoal) * 100).clamp(0, 999).round()}% of goal',
+                ?stepSensorLabel(d.steps, l),
+              ].join(' · '),
+        onTap: () => go(c, detail('steps')),
+        trailing: d.steps.value == null || d.stepGoal <= 0
+            ? null
+            : SizedBox(
+                width: 20,
+                height: 20,
+                child: CustomPaint(
+                  painter: Ring(
+                    d.steps.value! / d.stepGoal,
+                    C.green,
                     P.of(c).track,
-                    stroke: 3, solid: true),
+                    stroke: 3,
+                    solid: true,
+                  ),
+                ),
               ),
-            ),
-    ));
+      ),
+    );
     add(
       d.calories,
-      () => SignalCard(LucideIcons.flame, C.orange, l?.homeActiveEnergy ?? 'Active energy',
-          thousands(d.calories.value),
-          unit: 'kcal',
-          sub: d.caloriesTotal.value == null
-              ? (l?.homeCaloriesEstimated ?? 'Estimated')
-              : (l?.homeCaloriesTotal(thousands(d.caloriesTotal.value)) ??
+      () => SignalCard(
+        LucideIcons.flame,
+        C.orange,
+        l?.homeActiveEnergy ?? 'Active energy',
+        thousands(d.calories.value),
+        unit: 'kcal',
+        sub: d.caloriesTotal.value == null
+            ? (l?.homeCaloriesEstimated ?? 'Estimated')
+            : (l?.homeCaloriesTotal(thousands(d.caloriesTotal.value)) ??
                   '${thousands(d.caloriesTotal.value)} total'),
-          onTap: () => go(c, detail('calories'))),
+        onTap: () => go(c, detail('calories')),
+      ),
       // No `why:`. It said "Needs your weight and age" — and the measured run
       // printed that to a profile carrying both, because energy had gone absent
       // for an entirely different reason that the card never asked for.
-      () => StatusCard.forMetric(l?.homeNoEnergyEstimate ?? 'No energy estimate', d.calories),
+      () => StatusCard.forMetric(
+        l?.homeNoEnergyEstimate ?? 'No energy estimate',
+        d.calories,
+      ),
     );
     // The next alarm is not a reading of the day, so only today carries it —
     // "Tomorrow 07:30" under a day already over would be about a different day.
@@ -2396,40 +2830,45 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
       }
     }
 
-    return Column(children: [
-      for (var i = 0; i < cards.length; i += 2) ...[
-        if (i > 0) const SizedBox(height: S.x3),
-        // IntrinsicHeight, because `stretch` inside a ListView asks for an
-        // infinite height. The two cards in a row must match: a short card
-        // beside a tall one reads as a layout bug, not as less data.
-        // An odd last card takes the whole width rather than half of it with a
-        // hole beside it. Three cards is the ordinary count now that sleep is
-        // a ring, so the gap would be there every day.
-        if (i + 1 >= cards.length)
-          cards[i]
-        else
-          IntrinsicHeight(
-            child:
-                Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              Expanded(child: cards[i]),
-              const SizedBox(width: S.x3),
-              Expanded(child: cards[i + 1]),
-            ]),
-          ),
+    return Column(
+      children: [
+        for (var i = 0; i < cards.length; i += 2) ...[
+          if (i > 0) const SizedBox(height: S.x3),
+          // IntrinsicHeight, because `stretch` inside a ListView asks for an
+          // infinite height. The two cards in a row must match: a short card
+          // beside a tall one reads as a layout bug, not as less data.
+          // An odd last card takes the whole width rather than half of it with a
+          // hole beside it. Three cards is the ordinary count now that sleep is
+          // a ring, so the gap would be there every day.
+          if (i + 1 >= cards.length)
+            cards[i]
+          else
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(child: cards[i]),
+                  const SizedBox(width: S.x3),
+                  Expanded(child: cards[i + 1]),
+                ],
+              ),
+            ),
         ],
         // One card for everything missing, not one card each: a partial
         // night used to stack two or three absence cards and read as broken.
-        if (absent.length == 1) ...[const SizedBox(height: S.x3), absent.single]
-        else if (absent.length > 1) ...[
+        if (absent.length == 1) ...[
+          const SizedBox(height: S.x3),
+          absent.single,
+        ] else if (absent.length > 1) ...[
           const SizedBox(height: S.x3),
           StatusCard(
             // The glance also renders for a day the switcher stepped back
             // onto, where "today's" names the wrong day.
             isToday
                 ? (l?.homeSomeDataMissingTitle ??
-                    'Some of today\'s data is missing')
+                      'Some of today\'s data is missing')
                 : (l?.homeSomeDayDataMissingTitle ??
-                    'Some of this day\'s data is missing'),
+                      'Some of this day\'s data is missing'),
             [
               for (final s in absent)
                 [s.what, s.why, s.fix].where((t) => t.isNotEmpty).join('. '),
@@ -2441,7 +2880,6 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
     );
   }
 
-
   Widget _plan(BuildContext c, P p, HomeData d) {
     final l = AppLocalizations.of(c);
     final rows = <Widget>[];
@@ -2450,18 +2888,31 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
         ? null
         : (d.stepGoal - d.steps.value!).round();
     if (stepsLeft != null && stepsLeft > 0) {
-      rows.add(_row(
+      rows.add(
+        _row(
           p,
           LucideIcons.footprints,
           C.green,
-          l?.homeStepsLeft(thousands(stepsLeft)) ?? '${thousands(stepsLeft)} steps left',
+          l?.homeStepsLeft(thousands(stepsLeft)) ??
+              '${thousands(stepsLeft)} steps left',
           l?.homeMovement ?? 'Movement',
-          l?.homeGoalSteps(thousands(d.stepGoal)) ?? 'Goal ${thousands(d.stepGoal)}',
-          false));
+          l?.homeGoalSteps(thousands(d.stepGoal)) ??
+              'Goal ${thousands(d.stepGoal)}',
+          false,
+        ),
+      );
     } else if (stepsLeft != null) {
-      rows.add(_row(p, LucideIcons.footprints, C.green,
+      rows.add(
+        _row(
+          p,
+          LucideIcons.footprints,
+          C.green,
           l?.homeStepGoalMet ?? 'Step goal met',
-          l?.homeMovement ?? 'Movement', l?.actionDone ?? 'Done', true));
+          l?.homeMovement ?? 'Movement',
+          l?.actionDone ?? 'Done',
+          true,
+        ),
+      );
     }
 
     final target = d.strainTarget;
@@ -2471,29 +2922,34 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
       // 11.4" beside a ring reading 14.2 is a plan the day already overtook.
       // Same shape the step goal above it has always had.
       final met = (d.strain.value ?? -1) >= aim;
-      rows.add(_row(
+      rows.add(
+        _row(
           p,
           LucideIcons.zap,
           C.purple,
           met
               ? (l?.homeStrainTargetMet ?? 'Strain target met')
               : (l?.homeAimForStrain(displayFixed(aim, 1)) ??
-                  'Aim for ${displayFixed(aim, 1)} strain'),
+                    'Aim for ${displayFixed(aim, 1)} strain'),
           // Built on a wearable's estimated TRIMP: say so.
           [
             l?.homeTraining ?? 'Training',
-            if (target['estimated'] == true) l?.wearableEstimated ?? 'Estimated',
+            if (target['estimated'] == true)
+              l?.wearableEstimated ?? 'Estimated',
           ].join(' · '),
           met
               ? (l?.actionDone ?? 'Done')
               : '${_fixed1OrEmpty(target['low'])}–'
-                  '${_fixed1OrEmpty(target['high'])}',
-          met));
+                    '${_fixed1OrEmpty(target['high'])}',
+          met,
+        ),
+      );
     }
 
     final need = d.sleepNeedMin.value;
     if (need != null) {
-      rows.add(_row(
+      rows.add(
+        _row(
           p,
           LucideIcons.bedDouble,
           C.blue,
@@ -2501,34 +2957,45 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
           l?.homeTonight ?? 'Tonight',
           d.bedtime.value == null
               ? (l?.homeNeed ?? 'Need')
-              : (l?.homeBedTime(clock(d.bedtime.value)) ?? 'Bed ${clock(d.bedtime.value)}'),
-          false));
+              : (l?.homeBedTime(clock(d.bedtime.value)) ??
+                    'Bed ${clock(d.bedtime.value)}'),
+          false,
+        ),
+      );
     }
 
     final planBody = rows.isEmpty
-        ? StatusCard.forMetric(l?.homeNoPlanTitle ?? 'No plan for today yet', d.sleepNeedMin,
+        ? StatusCard.forMetric(
+                l?.homeNoPlanTitle ?? 'No plan for today yet',
+                d.sleepNeedMin,
                 // "none are established yet" is the COLD-START reason, and it
                 // is a wrong answer when the baselines exist and are being
                 // withheld.
                 why: d.insightsStale != null
-                    ? (l?.homeNoPlanWhyStale ?? 'Your trends are being updated. This takes a minute after a sync.')
-                    : (l?.homeNoPlanWhyNone ?? 'None are established yet.')) ??
-            const SizedBox.shrink()
+                    ? (l?.homeNoPlanWhyStale ??
+                          'Your trends are being updated. This takes a minute after a sync.')
+                    : (l?.homeNoPlanWhyNone ?? 'None are established yet.'),
+              ) ??
+              const SizedBox.shrink()
         : Surface(
             pad: const EdgeInsets.symmetric(horizontal: S.x4, vertical: S.x2),
-            child: Column(children: [
-              for (var i = 0; i < rows.length; i++) ...[
-                if (i > 0) Divider(color: p.line, height: 1),
-                rows[i],
+            child: Column(
+              children: [
+                for (var i = 0; i < rows.length; i++) ...[
+                  if (i > 0) Divider(color: p.line, height: 1),
+                  rows[i],
+                ],
               ],
-            ]),
+            ),
           );
 
-    return Column(children: [
-      planBody,
-      const SizedBox(height: S.x3),
-      _briefingDoor(c, d),
-    ]);
+    return Column(
+      children: [
+        planBody,
+        const SizedBox(height: S.x3),
+        _briefingDoor(c, d),
+      ],
+    );
   }
 
   /// The only quick way into [AiBriefingScreen] used to be the notification
@@ -2545,7 +3012,9 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
   /// morning/evening decision — or a briefing written in the background
   /// after that build — survive across the 17:00 boundary until Home
   /// happens to rebuild for an unrelated reason.
-  ({BriefingPeriod period, Briefing? briefing}) _resolveBriefingNow(HomeData d) {
+  ({BriefingPeriod period, Briefing? briefing}) _resolveBriefingNow(
+    HomeData d,
+  ) {
     final period = currentBriefingPeriod(DateTime.now());
     return resolveBriefingToShow(
       period,
@@ -2563,7 +3032,9 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
       l?.homeBriefingTitle ?? 'Briefing',
       cached?.oneLiner == 'Nothing stood out tonight.'
           ? uiText(c, cached!.oneLiner)
-          : cached?.oneLiner ?? (l?.homeBriefingSubtitleEmpty ?? 'Tap to write today\'s summary'),
+          : cached?.oneLiner ??
+                (l?.homeBriefingSubtitleEmpty ??
+                    'Tap to write today\'s summary'),
       () async {
         // Resolved fresh at tap time via _resolveBriefingNow, not read from
         // the value above — see that method's doc for why.
@@ -2576,42 +3047,54 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
         // some UNRELATED revision bump happens to refresh Home.
         final screen = AiBriefingScreen(period: _resolveBriefingNow(d).period);
         await Navigator.of(c).push(
-            themedRoute<void>((_) => screen, name: screen.runtimeType.toString()));
+          themedRoute<void>((_) => screen, name: screen.runtimeType.toString()),
+        );
         if (mounted) reload();
       },
     );
   }
 
-  Widget _row(P p, IconData i, Color col, String title, String kind,
-          String meta, bool done) =>
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: S.x3),
-        child: Row(children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration:
-                BoxDecoration(color: p.wash(col), borderRadius: R.rSm),
-            child: Icon(i, size: 16, color: p.on(col)),
+  Widget _row(
+    P p,
+    IconData i,
+    Color col,
+    String title,
+    String kind,
+    String meta,
+    bool done,
+  ) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: S.x3),
+    child: Row(
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(color: p.wash(col), borderRadius: R.rSm),
+          child: Icon(i, size: 16, color: p.on(col)),
+        ),
+        const SizedBox(width: S.x3),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(kind, style: F.over.copyWith(color: p.ink3)),
+              const SizedBox(height: 2),
+              Text(title, style: F.body.copyWith(color: p.ink)),
+            ],
           ),
-          const SizedBox(width: S.x3),
-          Expanded(
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(kind, style: F.over.copyWith(color: p.ink3)),
-                  const SizedBox(height: 2),
-                  Text(title, style: F.body.copyWith(color: p.ink)),
-                ]),
+        ),
+        const SizedBox(width: S.x2),
+        Text(
+          meta,
+          textAlign: TextAlign.right,
+          style: F.cap.copyWith(
+            color: done ? p.on(C.green) : p.ink3,
+            fontWeight: done ? FontWeight.w600 : FontWeight.w400,
           ),
-          const SizedBox(width: S.x2),
-          Text(meta,
-              textAlign: TextAlign.right,
-              style: F.cap.copyWith(
-                  color: done ? p.on(C.green) : p.ink3,
-                  fontWeight: done ? FontWeight.w600 : FontWeight.w400)),
-        ]),
-      );
+        ),
+      ],
+    ),
+  );
 }
 
 /// What happens in the first weeks, with the counts the pipeline actually
@@ -2619,50 +3102,72 @@ class _HomeScreenState extends State<HomeScreen> with RevisionReload {
 /// days give it a resting level, recovery once [readinessCompositeMinBaseline]
 /// earlier nights give it a normal range. Read from the analytics constants so
 /// the card cannot drift from the gate.
-Widget firstWeekCard(BuildContext c,
-    {required int days, required bool strainScored, int? recoveryNightsLeft}) {
+Widget firstWeekCard(
+  BuildContext c, {
+  required int days,
+  required bool strainScored,
+  int? recoveryNightsLeft,
+}) {
   final p = P.of(c);
   final l = AppLocalizations.of(c);
   final strainDay = quietHrrMinDays + 1;
   final recoveryNight = readinessCompositeMinBaseline + 1;
   Widget step(bool done, String text) => Semantics(
-        // The tick is drawn, so it is also said.
-        label: done ? (l?.homeFirstWeekDone(text) ?? 'Done: $text') : text,
-        excludeSemantics: true,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: S.x2),
-          child: Row(children: [
-            Icon(done ? LucideIcons.circleCheck : LucideIcons.circle,
-                size: 18, color: done ? p.on(C.green) : p.ink3),
-            const SizedBox(width: S.x3),
-            Expanded(
-                child: Text(text, style: F.body.copyWith(color: p.ink))),
-          ]),
-        ),
-      );
+    // The tick is drawn, so it is also said.
+    label: done ? (l?.homeFirstWeekDone(text) ?? 'Done: $text') : text,
+    excludeSemantics: true,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: S.x2),
+      child: Row(
+        children: [
+          Icon(
+            done ? LucideIcons.circleCheck : LucideIcons.circle,
+            size: 18,
+            color: done ? p.on(C.green) : p.ink3,
+          ),
+          const SizedBox(width: S.x3),
+          Expanded(
+            child: Text(text, style: F.body.copyWith(color: p.ink)),
+          ),
+        ],
+      ),
+    ),
+  );
   return Surface(
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(l?.homeFirstWeekTitle ?? 'Your first weeks',
-          style: F.head.copyWith(color: p.ink)),
-      const SizedBox(height: S.x2),
-      step(days > 0, l?.homeFirstWeekWear ?? 'Wear the band tonight'),
-      step(days > 0,
-          l?.homeFirstWeekSleep ?? 'Sleep: the morning after your first night'),
-      step(strainScored,
-          l?.homeFirstWeekStrain(strainDay) ?? 'Strain: from day $strainDay'),
-      // The live countdown when the pipeline says how many nights are left;
-      // the static "from night N" only before it has said anything.
-      step(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l?.homeFirstWeekTitle ?? 'Your first weeks',
+          style: F.head.copyWith(color: p.ink),
+        ),
+        const SizedBox(height: S.x2),
+        step(days > 0, l?.homeFirstWeekWear ?? 'Wear the band tonight'),
+        step(
+          days > 0,
+          l?.homeFirstWeekSleep ?? 'Sleep: the morning after your first night',
+        ),
+        step(
+          strainScored,
+          l?.homeFirstWeekStrain(strainDay) ?? 'Strain: from day $strainDay',
+        ),
+        // The live countdown when the pipeline says how many nights are left;
+        // the static "from night N" only before it has said anything.
+        step(
           false,
           recoveryNightsLeft != null
               ? (l?.homeRecoveryStartsIn(recoveryNightsLeft) ??
-                  'Recovery starts in $recoveryNightsLeft nights')
+                    'Recovery starts in $recoveryNightsLeft nights')
               : (l?.homeFirstWeekRecovery(recoveryNight) ??
-                  'Recovery: from night $recoveryNight, once it knows your normal')),
-      const SizedBox(height: S.x1),
-      Text(l?.homeFirstWeekSoFar(days) ?? '$days days recorded so far',
-          style: F.cap.copyWith(color: p.ink3)),
-    ]),
+                    'Recovery: from night $recoveryNight, once it knows your normal'),
+        ),
+        const SizedBox(height: S.x1),
+        Text(
+          l?.homeFirstWeekSoFar(days) ?? '$days days recorded so far',
+          style: F.cap.copyWith(color: p.ink3),
+        ),
+      ],
+    ),
   );
 }
 
@@ -2675,7 +3180,8 @@ Widget coachChip(BuildContext c) {
   final ready = coachReady(c);
   final text = ready
       ? (l?.homeAskCoach ?? 'Ask the coach')
-      : (l?.homeCoachSetUpChip ?? 'Ask questions about your data: set up the coach');
+      : (l?.homeCoachSetUpChip ??
+            'Ask questions about your data: set up the coach');
   return Align(
     alignment: Alignment.centerLeft,
     child: Pressable(
@@ -2683,17 +3189,26 @@ Widget coachChip(BuildContext c) {
       onTap: () => go(c, ready ? const CoachScreen() : const CoachSetup()),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: S.x4, vertical: S.x3),
-        decoration:
-            BoxDecoration(color: p.wash(kCoachAccent), borderRadius: R.rPill),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(LucideIcons.sparkles, size: 16, color: p.on(kCoachAccent)),
-          const SizedBox(width: S.x2),
-          Flexible(
-            child: Text(text,
+        decoration: BoxDecoration(
+          color: p.wash(kCoachAccent),
+          borderRadius: R.rPill,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.sparkles, size: 16, color: p.on(kCoachAccent)),
+            const SizedBox(width: S.x2),
+            Flexible(
+              child: Text(
+                text,
                 style: F.cap.copyWith(
-                    color: p.on(kCoachAccent), fontWeight: FontWeight.w600)),
-          ),
-        ]),
+                  color: p.on(kCoachAccent),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     ),
   );

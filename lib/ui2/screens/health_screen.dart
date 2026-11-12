@@ -32,6 +32,7 @@ import 'findings_log.dart';
 import 'home_screen.dart';
 import 'investigate.dart';
 import 'metric_detail.dart';
+import 'readiness_detail.dart';
 import 'wellness_screen.dart';
 
 /// A read this screen can live without. The wear block and the nap block are
@@ -45,7 +46,8 @@ import 'wellness_screen.dart';
 /// Takes a CALLBACK, not a future: the base class's stub is `=> throw`, which
 /// fires synchronously at the call site and never becomes a future to await.
 Future<Map<String, dynamic>> _soft(
-    Future<Map<String, dynamic>> Function() read) async {
+  Future<Map<String, dynamic>> Function() read,
+) async {
   try {
     return await read();
   } catch (_) {
@@ -129,8 +131,11 @@ class HealthData {
     final b = today['hrv'];
     final rmssd = b is Map ? b['rmssd'] as num? : null;
     if (rmssd == null || b is! Map) return Metric.empty;
-    return Metric.parse(
-        {...b.cast<String, dynamic>(), 'value': rmssd, 'unit': 'ms'});
+    return Metric.parse({
+      ...b.cast<String, dynamic>(),
+      'value': rmssd,
+      'unit': 'ms',
+    });
   }
 
   Metric get sleepMin {
@@ -189,8 +194,10 @@ class HealthData {
     final gap = (nightStart == null || dayStart == null)
         ? null
         : wearGapWhy(
-            [await _soft(() => repo.getDayWear(prevDay)),
-             await _soft(() => repo.getDayWear(nightDay))],
+            [
+              await _soft(() => repo.getDayWear(prevDay)),
+              await _soft(() => repo.getDayWear(nightDay)),
+            ],
             fromSec: nightStart + 20 * 3600,
             toSec: dayStart + 10 * 3600,
           );
@@ -223,15 +230,17 @@ class HealthData {
       profile: profile,
       charts: charts,
       daysWithData: days.where((d) => d.compareTo(from) >= 0).length,
-      need: envMetric(needEnv, needSec == null ? null : needSec / 60,
-          unit: 'min'),
+      need: envMetric(
+        needEnv,
+        needSec == null ? null : needSec / 60,
+        unit: 'min',
+      ),
       insightsStale: staleReasonOf(cd),
       nightGap: gap,
       napMin: (naps['nap_min'] as num?)?.round(),
       napCount: (naps['naps'] as List?)?.length,
       napDay: napDay,
-      findings:
-          findingsHistory(cd, readiness: ready, irregularDays: irregular),
+      findings: findingsHistory(cd, readiness: ready, irregularDays: irregular),
       baselines: heart['baselines'] is Map
           ? (heart['baselines'] as Map).cast<String, dynamic>()
           : null,
@@ -262,7 +271,10 @@ class VitalsData {
     final today = await repo.getToday();
     final days = await repo.availableDays();
     final day = pickDay(
-        days, want, (today['status'] as Map?)?['today_day']?.toString());
+      days,
+      want,
+      (today['status'] as Map?)?['today_day']?.toString(),
+    );
     if (day == null) return VitalsData(days: days);
     final timeline = await repo.getDayTimeline(day);
     return VitalsData(
@@ -308,8 +320,9 @@ class LabsData {
               ranges: [
                 if (d['ref_low'] is num && d['ref_high'] is num)
                   LabRefRange(
-                      low: (d['ref_low'] as num).toDouble(),
-                      high: (d['ref_high'] as num).toDouble()),
+                    low: (d['ref_low'] as num).toDouble(),
+                    high: (d['ref_high'] as num).toDouble(),
+                  ),
               ],
               custom: true,
             ),
@@ -374,9 +387,16 @@ const _catalogue = <_Cat>[
   _Cat('Heart & rhythm', [
     _CatRow('resting_hr', 'rhr', 'The lowest sustained rate of the night'),
     _CatRow('hrv', 'rmssd', 'RMSSD of beat-to-beat intervals during sleep'),
-    _CatRow('hrv_cv', 'hrv_cv',
-        'SDNN as a share of the average beat interval, within one night'),
-    _CatRow('lf_hf', 'lf_hf', 'Where beat-timing power sits across frequencies'),
+    _CatRow(
+      'hrv_cv',
+      'hrv_cv',
+      'SDNN as a share of the average beat interval, within one night',
+    ),
+    _CatRow(
+      'lf_hf',
+      'lf_hf',
+      'Where beat-timing power sits across frequencies',
+    ),
     _CatRow('dip', 'dip_pct', 'How far your heart rate falls while you sleep'),
     _CatRow('hrr', 'hrr_bpm', 'How fast it falls in the minute after a bout'),
   ]),
@@ -388,17 +408,37 @@ const _catalogue = <_Cat>[
     _CatRow('nap_min', 'nap_min', 'Sleep detected outside the main night'),
   ]),
   _Cat('Breathing', [
-    _CatRow('resp_rate', 'resp_rate', 'Breaths per minute, recovered from beat timing'),
+    _CatRow(
+      'resp_rate',
+      'resp_rate',
+      'Breaths per minute, recovered from beat timing',
+    ),
     _CatRow('brv', 'brv_cv', 'How much that rate varies across the night'),
-    _CatRow('spo2', 'spo2', "WHOOP's own derived value, carried from an import",
-        importOnly: true),
+    _CatRow(
+      'spo2',
+      'spo2',
+      "WHOOP's own derived value, carried from an import",
+      importOnly: true,
+    ),
   ]),
   _Cat('Movement & load', [
     _CatRow('steps', 'steps', 'Counted by a pedometer, never modelled'),
-    _CatRow('active_min', 'active_min', 'Minutes of movement volume, not locomotion'),
-    _CatRow('calories', 'calories', 'Active energy from heart rate and your profile'),
+    _CatRow(
+      'active_min',
+      'active_min',
+      'Minutes of movement volume, not locomotion',
+    ),
+    _CatRow(
+      'calories',
+      'calories',
+      'Active energy from heart rate and your profile',
+    ),
     _CatRow('strain', 'strain', 'Cardiovascular load over the day, on 0–21'),
-    _CatRow('trimp', 'trimp', 'Heart points with no cap; Strain is the 0–21 view'),
+    _CatRow(
+      'trimp',
+      'trimp',
+      'Heart points with no cap; Strain is the 0–21 view',
+    ),
   ]),
   _Cat('Body & wear', [
     _CatRow('skin_temp', 'skin_temp_z', 'Distance from your own recent nights'),
@@ -411,13 +451,13 @@ const _catalogue = <_Cat>[
 /// lookup happens here, at render time, keyed off the same literal English
 /// text/row key the const list already carries as its fallback.
 String _catTitle(AppLocalizations? l, String title) => switch (title) {
-      'Heart & rhythm' => l?.healthCatHeartRhythm ?? title,
-      'Sleep' => l?.healthRowSleep ?? title,
-      'Breathing' => l?.healthCatBreathing ?? title,
-      'Movement & load' => l?.healthCatMovementLoad ?? title,
-      'Body & wear' => l?.healthCatBodyWear ?? title,
-      _ => title,
-    };
+  'Heart & rhythm' => l?.healthCatHeartRhythm ?? title,
+  'Sleep' => l?.healthRowSleep ?? title,
+  'Breathing' => l?.healthCatBreathing ?? title,
+  'Movement & load' => l?.healthCatMovementLoad ?? title,
+  'Body & wear' => l?.healthCatBodyWear ?? title,
+  _ => title,
+};
 
 String _rowBlurb(AppLocalizations? l, String key, String blurb) =>
     switch (key) {
@@ -458,11 +498,11 @@ class ExploreData {
   const ExploreData({this.counts = const {}});
 
   static Future<ExploreData> load() async => ExploreData(
-        counts: await LocalDb.metricSeriesCounts([
-          for (final f in _catalogue)
-            for (final r in f.rows) r.series,
-        ]),
-      );
+    counts: await LocalDb.metricSeriesCounts([
+      for (final f in _catalogue)
+        for (final r in f.rows) r.series,
+    ]),
+  );
 }
 
 class HealthScreen extends StatefulWidget {
@@ -478,14 +518,15 @@ class HealthScreen extends StatefulWidget {
   /// calendar, so a test of "a day later" needs to move it.
   final DateTime? now;
 
-  const HealthScreen(
-      {super.key,
-      this.data,
-      this.vitals,
-      this.labs,
-      this.explore,
-      this.tab = 0,
-      this.now});
+  const HealthScreen({
+    super.key,
+    this.data,
+    this.vitals,
+    this.labs,
+    this.explore,
+    this.tab = 0,
+    this.now,
+  });
 
   @override
   State<HealthScreen> createState() => _HealthScreenState();
@@ -498,12 +539,12 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
   // — it is the manual-entry tab, the one a user goes looking for on purpose,
   // and the only one here that holds numbers this app did not measure.
   List<String> _tabsOf(AppLocalizations? l) => [
-        l?.healthTabOverview ?? 'Overview',
-        l?.healthTabExplore ?? 'Explore',
-        l?.healthTabTrends ?? 'Trends',
-        l?.healthTabVitals ?? 'Vitals',
-        l?.healthTabLabs ?? 'Labs',
-      ];
+    l?.healthTabOverview ?? 'Overview',
+    l?.healthTabExplore ?? 'Explore',
+    l?.healthTabTrends ?? 'Trends',
+    l?.healthTabVitals ?? 'Vitals',
+    l?.healthTabLabs ?? 'Labs',
+  ];
   late int _tab = widget.tab;
 
   HealthData? _d;
@@ -662,25 +703,30 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
   Widget build(BuildContext c) {
     final d = _d ?? const HealthData();
     final l = AppLocalizations.of(c);
-    return ListView(padding: pad, children: [
-      ScreenTitle(l?.healthTitle ?? 'Health',
-          trailing: const ProfileAvatar(accent: C.domHealth)),
-      SubTabs(_tabsOf(l), _tab, _select, color: C.blue),
-      const SizedBox(height: S.x5),
-      if (_loading && _d == null)
-        const Padding(
-          padding: EdgeInsets.only(top: S.x8),
-          child: Center(child: CircularProgressIndicator()),
-        )
-      else
-        switch (_tab) {
-          0 => _overview(c, d),
-          1 => _explore(c),
-          2 => _trends(c, d),
-          3 => _vitals(c, d),
-          _ => _labs(c),
-        },
-    ]);
+    return ListView(
+      padding: pad,
+      children: [
+        ScreenTitle(
+          l?.healthTitle ?? 'Health',
+          trailing: const ProfileAvatar(accent: C.domHealth),
+        ),
+        SubTabs(_tabsOf(l), _tab, _select, color: C.blue),
+        const SizedBox(height: S.x5),
+        if (_loading && _d == null)
+          const Padding(
+            padding: EdgeInsets.only(top: S.x8),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else
+          switch (_tab) {
+            0 => _overview(c, d),
+            1 => _explore(c),
+            2 => _trends(c, d),
+            3 => _vitals(c, d),
+            _ => _labs(c),
+          },
+      ],
+    );
   }
 
   // ─────────────── OVERVIEW ───────────────
@@ -699,26 +745,44 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
     // project makes no directional claim about takes [Rising.neither] and
     // draws its arrow in ink — the direction is stated, the verdict is not
     // invented.
-    void row(Metric m, IconData icon, Color col, String name, String sub,
-        String value, String unit, List<double?> series, String metricKey,
-        {String? whyAbsent,
-        bool overnight = true,
-        Rising rising = Rising.neither}) {
+    void row(
+      Metric m,
+      IconData icon,
+      Color col,
+      String name,
+      String sub,
+      String value,
+      String unit,
+      List<double?> series,
+      String metricKey, {
+      String? whyAbsent,
+      bool overnight = true,
+      Rising rising = Rising.neither,
+    }) {
       if (m.isEmpty) {
         final s = StatusCard.forMetric(
-            l?.healthNoMetric(nounInSentence(l, name)) ??
-                'No ${name.toLowerCase()}',
-            m,
-            why: whyAbsent ?? '', gap: overnight ? d.nightGap : null);
+          l?.healthNoMetric(nounInSentence(l, name)) ??
+              'No ${name.toLowerCase()}',
+          m,
+          why: whyAbsent ?? '',
+          gap: overnight ? d.nightGap : null,
+        );
         if (s != null) gaps.add(s);
         return;
       }
-      rows.add(MetricRow(icon, col, name, value,
+      rows.add(
+        MetricRow(
+          icon,
+          col,
+          name,
+          value,
           sub: sub,
           unit: unit,
           series: series,
           rising: rising,
-          onTap: () => go(c, MetricDetail(metricKey))));
+          onTap: () => go(c, MetricDetail(metricKey)),
+        ),
+      );
     }
 
     // Five of these rows come off the overnight block, and `getToday` holds
@@ -733,35 +797,49 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
     final sleepMin = d.sleepMin;
 
     final rhr = d.daily('resting_hr');
-    row(rhr, LucideIcons.heart, C.red, l?.healthRowRestingHr ?? 'Resting heart rate',
-        ofNight(l?.healthSubOvernight ?? 'Overnight'),
-        rhr.value == null ? '' : '${rhr.value!.round()}', 'bpm',
-        d.spark('resting_hr', 24), 'resting_hr',
-        // Sleep duration and nocturnal RHR are gated separately, so "no night
-        // was scored" is often the wrong reason and contradicts the Sleep row
-        // sitting two lines down. Only the branch this screen can SEE is
-        // stated — the other named a beat-quality gate it never read.
-        // Nocturnal resting heart rate: lower is the direction every part of
-        // this app already treats as better — it is what the illness CUSUM
-        // watches for a RISE, and what readiness scores as `lowerIsBetter`.
-        rising: Rising.bad,
-        whyAbsent: sleepMin.isEmpty
-            ? (l?.healthWhyReadFromSleep ??
+    row(
+      rhr,
+      LucideIcons.heart,
+      C.red,
+      l?.healthRowRestingHr ?? 'Resting heart rate',
+      ofNight(l?.healthSubOvernight ?? 'Overnight'),
+      rhr.value == null ? '' : '${rhr.value!.round()}',
+      'bpm',
+      d.spark('resting_hr', 24),
+      'resting_hr',
+      // Sleep duration and nocturnal RHR are gated separately, so "no night
+      // was scored" is often the wrong reason and contradicts the Sleep row
+      // sitting two lines down. Only the branch this screen can SEE is
+      // stated — the other named a beat-quality gate it never read.
+      // Nocturnal resting heart rate: lower is the direction every part of
+      // this app already treats as better — it is what the illness CUSUM
+      // watches for a RISE, and what readiness scores as `lowerIsBetter`.
+      rising: Rising.bad,
+      whyAbsent: sleepMin.isEmpty
+          ? (l?.healthWhyReadFromSleep ??
                 'Read from sleep, and no night was scored.')
-            : '');
+          : '',
+    );
 
     final hrvMetric = d.hrv;
-    row(hrvMetric, LucideIcons.activity, C.green, l?.healthRowHrv ?? 'HRV',
-        ofNight(l?.healthSubRmssdAsleep ?? 'HRV, asleep'),
-        hrvMetric.value == null ? '' : '${hrvMetric.value!.round()}', 'ms',
-        d.spark('hrv', 24), 'hrv',
-        rising: Rising.good,
-        // Blaming signal quality unconditionally told a day-one user their
-        // sensor produced dirty data on a night that never happened.
-        whyAbsent: sleepMin.isEmpty
-            ? (l?.healthWhyReadOnlyFromSleep ??
+    row(
+      hrvMetric,
+      LucideIcons.activity,
+      C.green,
+      l?.healthRowHrv ?? 'HRV',
+      ofNight(l?.healthSubRmssdAsleep ?? 'HRV, asleep'),
+      hrvMetric.value == null ? '' : '${hrvMetric.value!.round()}',
+      'ms',
+      d.spark('hrv', 24),
+      'hrv',
+      rising: Rising.good,
+      // Blaming signal quality unconditionally told a day-one user their
+      // sensor produced dirty data on a night that never happened.
+      whyAbsent: sleepMin.isEmpty
+          ? (l?.healthWhyReadOnlyFromSleep ??
                 'Read only from sleep, and no night was scored.')
-            : '');
+          : '',
+    );
 
     row(
       sleepMin,
@@ -778,61 +856,72 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
       // More sleep is the direction this app coaches towards — `sleepNeed`
       // exists to say you are short of it, never over it.
       rising: Rising.good,
-        whyAbsent: l?.healthWhySleepNotLongEnough ??
-            'No sleep period long enough to score was recorded.',
+      whyAbsent:
+          l?.healthWhySleepNotLongEnough ??
+          'No sleep period long enough to score was recorded.',
     );
 
     final stressBlock = d.today['stress'];
-    final stressScore =
-        stressBlock is Map ? (stressBlock['score'] as num?) : null;
+    final stressScore = stressBlock is Map
+        ? (stressBlock['score'] as num?)
+        : null;
     row(
-        d.stress,
-        LucideIcons.brain,
-        C.purple,
-        l?.healthRowStress ?? 'Stress',
-        // The level is analytics' English token; it goes through the same
-        // localized mapping Wellness uses, or a German row read 'elevated'.
-        ofNight((stressBlock is Map && stressBlock['level'] is String
+      d.stress,
+      LucideIcons.brain,
+      C.purple,
+      l?.healthRowStress ?? 'Stress',
+      // The level is analytics' English token; it goes through the same
+      // localized mapping Wellness uses, or a German row read 'elevated'.
+      ofNight(
+        (stressBlock is Map && stressBlock['level'] is String
                 ? stressLevelLabel(l, stressBlock['level'] as String)
                 : null) ??
-            (l?.healthRowStress ?? 'Stress')),
-        stressScore == null ? '' : '${stressScore.round()}',
-        // 0–100, and the scale has to be on the row. Wellness has always shown
-        // it for the same number.
-        '/100',
-        d.spark('stress', 24),
-        'stress',
-        rising: Rising.bad,
-        // Was 'No resting stretch long enough last night.' — one of several
-        // gates stress abstains on, asserted for all of them.
-        whyAbsent: sleepMin.isEmpty
-            ? (l?.healthWhyReadFromNight ??
+            (l?.healthRowStress ?? 'Stress'),
+      ),
+      stressScore == null ? '' : '${stressScore.round()}',
+      // 0–100, and the scale has to be on the row. Wellness has always shown
+      // it for the same number.
+      '/100',
+      d.spark('stress', 24),
+      'stress',
+      rising: Rising.bad,
+      // Was 'No resting stretch long enough last night.' — one of several
+      // gates stress abstains on, asserted for all of them.
+      whyAbsent: sleepMin.isEmpty
+          ? (l?.healthWhyReadFromNight ??
                 'Read from the night, and no night was scored.')
-            : '');
+          : '',
+    );
 
     final respMetric = d.resp;
-    row(respMetric, LucideIcons.wind, C.teal, l?.healthRowRespRate ?? 'Respiratory rate',
-        ofNight(l?.healthSubAsleep ?? 'Asleep'),
-        respMetric.value == null ? '' : respMetric.value!.toStringAsFixed(1),
-        'br/min',
-        d.spark('resp_rate', 24), 'resp_rate',
-        // DELIBERATELY UNJUDGED. Readiness scores a rise as a cost, but that
-        // is a deviation from your own baseline, not a claim that breathing
-        // slower is better health — nobody here would tell you a falling
-        // respiratory rate is good news. Direction, no verdict.
-        // THE ESTIMATOR'S OWN REASON when it left one, not a guess written
-        // here. `respiration.rsa` records which gate it failed — too few beats,
-        // artifact fraction over the gate, no stable HF peak, or a peak that
-        // moved across spectral resolutions — and the repository now carries
-        // that note through. This screen guessed "too noisy" for all four,
-        // which was right about a quarter of the time.
-        whyAbsent: respMetric.note?.isNotEmpty == true
-            ? respMetric.note!
-            : (sleepMin.isEmpty
+    row(
+      respMetric,
+      LucideIcons.wind,
+      C.teal,
+      l?.healthRowRespRate ?? 'Respiratory rate',
+      ofNight(l?.healthSubAsleep ?? 'Asleep'),
+      respMetric.value == null ? '' : respMetric.value!.toStringAsFixed(1),
+      'br/min',
+      d.spark('resp_rate', 24),
+      'resp_rate',
+      // DELIBERATELY UNJUDGED. Readiness scores a rise as a cost, but that
+      // is a deviation from your own baseline, not a claim that breathing
+      // slower is better health — nobody here would tell you a falling
+      // respiratory rate is good news. Direction, no verdict.
+      // THE ESTIMATOR'S OWN REASON when it left one, not a guess written
+      // here. `respiration.rsa` records which gate it failed — too few beats,
+      // artifact fraction over the gate, no stable HF peak, or a peak that
+      // moved across spectral resolutions — and the repository now carries
+      // that note through. This screen guessed "too noisy" for all four,
+      // which was right about a quarter of the time.
+      whyAbsent: respMetric.note?.isNotEmpty == true
+          ? respMetric.note!
+          : (sleepMin.isEmpty
                 ? (l?.healthWhyReadOnlyFromSleep ??
-                    'Read only from sleep, and no night was scored.')
+                      'Read only from sleep, and no night was scored.')
                 : (l?.healthWhyNoReadingLastNight ??
-                    'No reading from last night.')));
+                      'No reading from last night.')),
+    );
 
     final illness = d.today['illness'];
     final state = illness is Map ? illness['state']?.toString() : null;
@@ -852,7 +941,8 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
     // Same freshness rule as the push and Home: only today's or yesterday's
     // night, judged by the WALL CLOCK at build time — a payload loaded
     // yesterday and rebuilt today with no new sync has aged a day all the same.
-    final illnessCard = state == null ||
+    final illnessCard =
+        state == null ||
             state == 'green' ||
             illnessDay == null ||
             !isRecentFindingDate(illnessDay, today: todayLabel(widget.now))
@@ -860,10 +950,10 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
         : Observation(
             state == 'red'
                 ? (l?.healthIllnessRedTitle ??
-                    'Recent nights add up to a raised resting heart rate')
+                      'Recent nights add up to a raised resting heart rate')
                 : (illnessBehind == null || illnessBehind <= 0
-                    ? (l?.healthIllnessLastNightTitle ??
-                        'Last night sat outside your normal range')
+                      ? (l?.healthIllnessLastNightTitle ??
+                            'Last night sat outside your normal range')
                       : (l?.healthIllnessDayTitle(prettyDay(illnessDay, l)) ??
                             '${prettyDay(illnessDay, l)} sat outside your normal range')),
             // The RUN is what is above baseline — the accumulator only clears
@@ -873,136 +963,172 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
             // below it".
             illnessZ == null
                 ? (l?.healthIllnessBodyNoZ ??
-                    'Your resting heart rate has run above your usual over recent nights. This tracks one signal, so it shows a pattern, not a cause.')
+                      'Your resting heart rate has run above your usual over recent nights. This tracks one signal, so it shows a pattern, not a cause.')
                 : (l?.healthIllnessBodyWithZ(
                         illnessZ.abs().toStringAsFixed(1),
                         illnessZ >= 0
                             ? (l.healthDirectionAbove)
-                            : (l.healthDirectionBelow)) ??
-                    'Recent nights together put your resting heart rate above '
-                        'your usual. On its own, that night was '
-                        '${illnessZ.abs().toStringAsFixed(1)}× your normal '
-                        'night-to-night swing ${illnessZ >= 0 ? 'above' : 'below'} '
-                        'it. A pattern, not a cause.'),
-            advice: l?.healthIllnessAdvice ??
+                            : (l.healthDirectionBelow),
+                      ) ??
+                      'Recent nights together put your resting heart rate above '
+                          'your usual. On its own, that night was '
+                          '${illnessZ.abs().toStringAsFixed(1)}× your normal '
+                          'night-to-night swing ${illnessZ >= 0 ? 'above' : 'below'} '
+                          'it. A pattern, not a cause.'),
+            advice:
+                l?.healthIllnessAdvice ??
                 'Worth noting if it continues past a couple of days.',
           );
 
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      // WHOOP MG only: the ECG door appears once the paired band has
-      // positively identified itself as an MG, and stays while it is away.
-      if (pairedIsMaverickOf(c)) ...[
-        const EcgEntryCard(),
+    final head = todayHeadlineOf(d.today);
+    final double? recoveryPct = () {
+      final fromHead = (head['recovery'] as num?)?.toDouble();
+      if (fromHead != null) return fromHead;
+      final daily = d.today['daily'];
+      if (daily is Map) {
+        final v = metricOf(daily['readiness']).value;
+        return v?.toDouble();
+      }
+      return null;
+    }();
+    final double? chronoAge = (d.profile['age'] as num?)?.toDouble();
+    final double? vitalAge = WbVitalHero.illustrativeVitalAge(
+      recoveryPct: recoveryPct,
+      chronologicalAge: chronoAge,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // WhoopsBand Body hero — original vitality index (not a vendor age score).
+        WbVitalHero(
+          recoveryPct: recoveryPct,
+          vitalAge: vitalAge,
+          chronologicalAge: chronoAge,
+          onTap: () => go(c, const ReadinessDetail()),
+        ),
         const SizedBox(height: S.x3),
-      ],
-      // Where today's recovery stands, in Home's words: the overnight rows
-      // below can be a held-over night while Home greys today's own number.
-      if (recoveryStateLine(todayHeadlineOf(d.today), l) case final note?) ...[
-        Text('${l?.homeRingRecovery ?? 'Recovery'} · $note',
-            style: F.cap.copyWith(color: p.ink3)),
-        const SizedBox(height: S.x2),
-      ],
-      if (rows.isNotEmpty)
-        Surface(
-          pad: const EdgeInsets.symmetric(horizontal: S.x4),
-          child: Column(children: [
-            for (var i = 0; i < rows.length; i++) ...[
-              if (i > 0) Divider(color: p.line, height: 1),
-              rows[i],
-            ],
-          ]),
-        ),
-      for (final g in gaps) ...[const SizedBox(height: S.x3), g],
-      // The active wearable's heart rows, each with its class, source line
-      // and reason. Nothing on a WHOOP-only install, nor when handed data.
-      if (widget.data == null) const WearableCells(kHealthWearableRows),
+        // WHOOP MG only: the ECG door appears once the paired band has
+        // positively identified itself as an MG, and stays while it is away.
+        if (pairedIsMaverickOf(c)) ...[
+          const EcgEntryCard(),
+          const SizedBox(height: S.x3),
+        ],
+        // Where today's recovery stands, in Home's words: the overnight rows
+        // below can be a held-over night while Home greys today's own number.
+        if (recoveryStateLine(head, l) case final note?) ...[
+          Text(
+            '${l?.homeRingRecovery ?? 'Recovery'} · $note',
+            style: F.cap.copyWith(color: p.ink3),
+          ),
+          const SizedBox(height: S.x2),
+        ],
+        if (rows.isNotEmpty)
+          WbCard(
+            pad: const EdgeInsets.symmetric(horizontal: S.x4),
+            child: Column(
+              children: [
+                for (var i = 0; i < rows.length; i++) ...[
+                  if (i > 0) Divider(color: p.line, height: 1),
+                  rows[i],
+                ],
+              ],
+            ),
+          ),
+        for (final g in gaps) ...[const SizedBox(height: S.x3), g],
+        // The active wearable's heart rows, each with its class, source line
+        // and reason. Nothing on a WHOOP-only install, nor when handed data.
+        if (widget.data == null) const WearableCells(kHealthWearableRows),
 
-      // OBSERVATIONS — the illness watch, wrapped, plus a door to the other
-      // three detectors.
-      //
-      // The illness card is unchanged and stays first: it is the one finding
-      // with copy specific enough to be worth a card of its own. What it gains
-      // is a title over it and a way through to the anomaly, skin temperature
-      // and resting-HR findings, which fired for months and reached no screen
-      // at all. NOT a feed — see findings_log.dart. Nothing here is unread,
-      // badged or dismissible, and it does not appear on Home.
-      if (illnessCard != null || d.findings.isNotEmpty) ...[
-        const SizedBox(height: S.x4),
+        // OBSERVATIONS — the illness watch, wrapped, plus a door to the other
+        // three detectors.
+        //
+        // The illness card is unchanged and stays first: it is the one finding
+        // with copy specific enough to be worth a card of its own. What it gains
+        // is a title over it and a way through to the anomaly, skin temperature
+        // and resting-HR findings, which fired for months and reached no screen
+        // at all. NOT a feed — see findings_log.dart. Nothing here is unread,
+        // badged or dismissible, and it does not appear on Home.
+        if (illnessCard != null || d.findings.isNotEmpty) ...[
+          const SizedBox(height: S.x4),
+          Section(
+            l?.healthObservationsTitle ?? 'Observations',
+            illnessCard ??
+                // No live illness, but the log is not empty: the newest entry in
+                // place and the rest one tap away. ONE row — a wall of findings
+                // on the tab you land on is the feed this is not.
+                Surface(
+                  onTap: () => go(c, FindingsLog(d.findings)),
+                  child: FindingRow(d.findings.first),
+                ),
+            action: d.findings.isEmpty ? null : (l?.healthSeeAll ?? 'See all'),
+            onAction: d.findings.isEmpty
+                ? null
+                : () => go(c, FindingsLog(d.findings)),
+          ),
+        ],
+
+        // Naps moved to the Sleep tab, beside the night (the Naps door there).
+
+        // What used to be the Wellness tab: the things you tell the app back.
+        // ONE door now, not one per tab: in the contributed data breathing,
+        // medication and cycle were each used by a handful of people, so they
+        // share a row and the screen behind it keeps its own tabs.
         Section(
-          l?.healthObservationsTitle ?? 'Observations',
-          illnessCard ??
-              // No live illness, but the log is not empty: the newest entry in
-              // place and the rest one tap away. ONE row — a wall of findings
-              // on the tab you land on is the feed this is not.
-              Surface(
-                onTap: () => go(c, FindingsLog(d.findings)),
-                child: FindingRow(d.findings.first),
-              ),
-          action: d.findings.isEmpty ? null : (l?.healthSeeAll ?? 'See all'),
-          onAction:
-              d.findings.isEmpty ? null : () => go(c, FindingsLog(d.findings)),
-        ),
-      ],
-
-      // Naps moved to the Sleep tab, beside the night (the Naps door there).
-
-      // What used to be the Wellness tab: the things you tell the app back.
-      // ONE door now, not one per tab: in the contributed data breathing,
-      // medication and cycle were each used by a handful of people, so they
-      // share a row and the screen behind it keeps its own tabs.
-      Section(
-        l?.healthWellbeingTitle ?? 'Mind, habits and medication',
-        detailLinkRow(
+          l?.healthWellbeingTitle ?? 'Mind, habits and medication',
+          detailLinkRow(
             c,
             LucideIcons.wind,
             l?.wellnessTabMind ?? 'Mind',
             // Cycle is a tab there only while cycle tracking is on.
             _cycleTrackingOn(c)
                 ? (l?.healthWellbeingAllSubCycle ??
-                    'Breathing, mood, the journal, habits, medication and cycle')
+                      'Breathing, mood, the journal, habits, medication and cycle')
                 : (l?.healthWellbeingAllSub ??
-                    'Breathing, mood, the journal, habits and medication'),
-            () => go(c, const WellnessScreen(initialTab: 0))),
-      ),
+                      'Breathing, mood, the journal, habits and medication'),
+            () => go(c, const WellnessScreen(initialTab: 0)),
+          ),
+        ),
 
-      // THERE IS NO "BODY COMPOSITION" SECTION, AND THE NEXT PERSON SHOULD NOT
-      // BUILD ONE. It used to print the onboarding weight scalar, and the ask
-      // that replaced it was "is their weight normal for the intake and the
-      // burn" — a bar like the against-your-usual ones. Three measurements
-      // killed it, in order of how hard they kill it:
-      //
-      //   1. INTAKE. `food_entry` (nutrition_store.dart) does not exist in any
-      //      real database on hand, and `journal_metric` exists in one with
-      //      zero rows. So the honest fill rate for logged days is 0, and
-      //      `DayLogState.partial` is the state a real log lands in most of the
-      //      time by design — an occasion with no kcal is a VALID log and makes
-      //      the day's energy a floor, not a total. Self-report is also under
-      //      by 20-30% in free-living adults, which is the same size as the
-      //      deficits anyone would be looking for. A balance computed off that
-      //      is not a small error, it is the wrong sign about half the time.
-      //
-      //   2. BURN. `calories_total` is tier ESTIMATE, confidence 0.5: a Mifflin
-      //      floor over the covered day plus a Keytel surplus over the wake
-      //      span. On the real export it swings 2 454 - 4 545 kcal across a
-      //      fortnight, and a barely-worn day still publishes a confident
-      //      1 715 with 0 active. That daily swing alone is bigger than the
-      //      imbalance a verdict would be claiming to see.
-      //
-      //   3. WEIGHT. It is one profile scalar here, not a series, so it can
-      //      never be an against-your-usual bar. The trend that IS honest
-      //      already exists somewhere better: `weightTrendEwma` drawn by the
-      //      Journal weight screen, gaps left as gaps. Read the ceiling written
-      //      above it in journal_fields.dart before reopening this — weekly
-      //      scale noise is +/-1 kg and a 2 400 kcal weekly imbalance moves
-      //      ~0.3 kg, so the residual is several times smaller than the noise
-      //      it would have to be read out of. The 7 700 kcal/kg rule is a
-      //      population approximation, never a personal constant.
-      //
-      // A bar drawn from any two of those three is arithmetic on a floor
-      // wearing the costume of a measurement, and this screen exists to not do
-      // that. If someone logs food completely for months AND weighs in
-      // repeatedly, the thing to build is still not a verdict on the person.
-    ]);
+        // THERE IS NO "BODY COMPOSITION" SECTION, AND THE NEXT PERSON SHOULD NOT
+        // BUILD ONE. It used to print the onboarding weight scalar, and the ask
+        // that replaced it was "is their weight normal for the intake and the
+        // burn" — a bar like the against-your-usual ones. Three measurements
+        // killed it, in order of how hard they kill it:
+        //
+        //   1. INTAKE. `food_entry` (nutrition_store.dart) does not exist in any
+        //      real database on hand, and `journal_metric` exists in one with
+        //      zero rows. So the honest fill rate for logged days is 0, and
+        //      `DayLogState.partial` is the state a real log lands in most of the
+        //      time by design — an occasion with no kcal is a VALID log and makes
+        //      the day's energy a floor, not a total. Self-report is also under
+        //      by 20-30% in free-living adults, which is the same size as the
+        //      deficits anyone would be looking for. A balance computed off that
+        //      is not a small error, it is the wrong sign about half the time.
+        //
+        //   2. BURN. `calories_total` is tier ESTIMATE, confidence 0.5: a Mifflin
+        //      floor over the covered day plus a Keytel surplus over the wake
+        //      span. On the real export it swings 2 454 - 4 545 kcal across a
+        //      fortnight, and a barely-worn day still publishes a confident
+        //      1 715 with 0 active. That daily swing alone is bigger than the
+        //      imbalance a verdict would be claiming to see.
+        //
+        //   3. WEIGHT. It is one profile scalar here, not a series, so it can
+        //      never be an against-your-usual bar. The trend that IS honest
+        //      already exists somewhere better: `weightTrendEwma` drawn by the
+        //      Journal weight screen, gaps left as gaps. Read the ceiling written
+        //      above it in journal_fields.dart before reopening this — weekly
+        //      scale noise is +/-1 kg and a 2 400 kcal weekly imbalance moves
+        //      ~0.3 kg, so the residual is several times smaller than the noise
+        //      it would have to be read out of. The 7 700 kcal/kg rule is a
+        //      population approximation, never a personal constant.
+        //
+        // A bar drawn from any two of those three is arithmetic on a floor
+        // wearing the costume of a measurement, and this screen exists to not do
+        // that. If someone logs food completely for months AND weighs in
+        // repeatedly, the thing to build is still not a verdict on the person.
+      ],
+    );
   }
 
   // ─────────────── TRENDS ───────────────
@@ -1020,8 +1146,15 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
     // No `Metric` argument: this card is drawn entirely from the stored
     // series, so taking the envelope only implied a cross-check that was
     // never made.
-    Widget trend(String key, String label, String unit, Color col,
-        {bool higherBetter = true, double? against, String? againstLabel}) {
+    Widget trend(
+      String key,
+      String label,
+      String unit,
+      Color col, {
+      bool higherBetter = true,
+      double? against,
+      String? againstLabel,
+    }) {
       final pts = d.points(key);
       // Statistics off the STORED values; the painter gets the dense window.
       final s = valuesOf(pts);
@@ -1047,7 +1180,8 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
       final behind = daysBehind(pts.last.t) ?? 0;
       final asOf = behind <= 0
           ? ''
-          : (l?.healthAsOf(axisDay(pts.last.t)) ?? ' · as of ${axisDay(pts.last.t)}');
+          : (l?.healthAsOf(axisDay(pts.last.t)) ??
+                ' · as of ${axisDay(pts.last.t)}');
       // [against] is the sleep need. It is a different question from "is this
       // usual for you" and stays as the small print: the debt is the more
       // useful of the two numbers on a sleep card.
@@ -1077,41 +1211,54 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
         higherBetter: higherBetter,
         format: fmt,
         dayOf: (i) => prettyDay(
-            dayLabelOf(DateTime(n.year, n.month, n.day - (win.length - 1 - i))),
-            l),
+          dayLabelOf(DateTime(n.year, n.month, n.day - (win.length - 1 - i))),
+          l,
+        ),
         onTap: () => go(c, MetricDetail(metricKey)),
       );
     }
 
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      trend('resting_hr', l?.healthRowRestingHr ?? 'Resting heart rate', 'bpm',
-          C.red, higherBetter: false),
-      const SizedBox(height: S.x3),
-      trend('hrv', l?.healthRowHrv ?? 'HRV', 'ms', C.green),
-      const SizedBox(height: S.x3),
-      if (d.need.value == null)
-        trend('sleep', l?.healthTimeAsleep ?? 'Time asleep', '', C.blue)
-      else
-        // `need` here is `crossday.sleep_coach.need` — the COMPUTED need. It is
-        // never `sleep.need_min`, which is a hardcoded 480.
-        trend('sleep', l?.healthTimeAsleep ?? 'Time asleep', '', C.blue,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        trend(
+          'resting_hr',
+          l?.healthRowRestingHr ?? 'Resting heart rate',
+          'bpm',
+          C.red,
+          higherBetter: false,
+        ),
+        const SizedBox(height: S.x3),
+        trend('hrv', l?.healthRowHrv ?? 'HRV', 'ms', C.green),
+        const SizedBox(height: S.x3),
+        if (d.need.value == null)
+          trend('sleep', l?.healthTimeAsleep ?? 'Time asleep', '', C.blue)
+        else
+          // `need` here is `crossday.sleep_coach.need` — the COMPUTED need. It is
+          // never `sleep.need_min`, which is a hardcoded 480.
+          trend(
+            'sleep',
+            l?.healthTimeAsleep ?? 'Time asleep',
+            '',
+            C.blue,
             against: d.need.value!.toDouble(),
-            againstLabel: l?.healthVsNeed(hm(d.need.value)) ??
-                'vs your ${hm(d.need.value)} need'),
+            againstLabel:
+                l?.healthVsNeed(hm(d.need.value)) ??
+                'vs your ${hm(d.need.value)} need',
+          ),
 
-      // Body clock (natural bedtime, weekend shift, consistency) moved to
-      // the Sleep tab, beside the night it is about.
-
-      Section(
-        l?.healthConsistencyTitle ?? 'Consistency',
-        Surface(
-          child: Consistency(
-            // Already windowed to the last 30 calendar days by `HealthData.load`
-            // — the clamp is a floor for a bad count, not the window.
-            d.daysWithData.clamp(0, 30),
-            30,
-            l?.healthDaysWithRecord ??
-                'Days with a score in the last 30 days',
+        // Body clock (natural bedtime, weekend shift, consistency) moved to
+        // the Sleep tab, beside the night it is about.
+        Section(
+          l?.healthConsistencyTitle ?? 'Consistency',
+          Surface(
+            child: Consistency(
+              // Already windowed to the last 30 calendar days by `HealthData.load`
+              // — the clamp is a floor for a bad count, not the window.
+              d.daysWithData.clamp(0, 30),
+              30,
+              l?.healthDaysWithRecord ??
+                  'Days with a score in the last 30 days',
               C.domHealth,
             ),
           ),
@@ -1120,7 +1267,6 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
     );
   }
 
-
   // ─────────────── VITALS ───────────────
   Widget _vitals(BuildContext c, HealthData d) {
     final p = P.of(c);
@@ -1128,20 +1274,23 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
     final v = _v;
     if (v == null) {
       final days = _vDays;
-      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        // Null `_vDay` is today, the newest day in the list.
-        if (days != null && days.isNotEmpty)
-          ...dayNavRow(_vDay ?? days.first, days, _goVitalsDay),
-        _vFailed
-            ? _readFailed(l?.healthWhatVitals ?? 'vitals', () {
-                setState(() => _vFailed = false);
-                _loadVitals();
-              })
-            : const Padding(
-                padding: EdgeInsets.only(top: S.x8),
-                child: Center(child: CircularProgressIndicator()),
-              ),
-      ]);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Null `_vDay` is today, the newest day in the list.
+          if (days != null && days.isNotEmpty)
+            ...dayNavRow(_vDay ?? days.first, days, _goVitalsDay),
+          _vFailed
+              ? _readFailed(l?.healthWhatVitals ?? 'vitals', () {
+                  setState(() => _vFailed = false);
+                  _loadVitals();
+                })
+              : const Padding(
+                  padding: EdgeInsets.only(top: S.x8),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+        ],
+      );
     }
 
     // WHICH DAY this tab is showing. Every row here used to say "Today" for a
@@ -1177,13 +1326,23 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
     // list in the app already puts it.
     final rows = <Widget>[
       if (lo != null && hi != null)
-        MetricRow(LucideIcons.heart, C.red, l?.healthRowHeartRate ?? 'Heart rate',
-            '${lo.round()} – ${hi.round()}',
-            sub: dayWord, unit: 'bpm'),
+        MetricRow(
+          LucideIcons.heart,
+          C.red,
+          l?.healthRowHeartRate ?? 'Heart rate',
+          '${lo.round()} – ${hi.round()}',
+          sub: dayWord,
+          unit: 'bpm',
+        ),
       if (resp != null)
-        MetricRow(LucideIcons.wind, C.teal, l?.healthRowRespRate ?? 'Respiratory rate',
-            resp.toStringAsFixed(1),
-            sub: l?.healthSubAsleep ?? 'Asleep', unit: 'br/min'),
+        MetricRow(
+          LucideIcons.wind,
+          C.teal,
+          l?.healthRowRespRate ?? 'Respiratory rate',
+          resp.toStringAsFixed(1),
+          sub: l?.healthSubAsleep ?? 'Asleep',
+          unit: 'br/min',
+        ),
       if (skinTemp.value != null || tempDevC != null)
         // NAME THE QUANTITY. This is `skin_temp_z` — standard deviations from
         // the user's own baseline. It printed signed and unitless beside a
@@ -1197,7 +1356,7 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
           tempDevC != null
               ? '${tempDevC >= 0 ? '+' : '−'}${tempDevC.abs().toStringAsFixed(1)}'
               : '${skinTemp.value! >= 0 ? '+' : '−'}'
-                  '${skinTemp.value!.abs().toStringAsFixed(2)}',
+                    '${skinTemp.value!.abs().toStringAsFixed(2)}',
           sub: [
             if ((d.today['skin_temp'] as Map?)?['provisional'] == true)
               l?.wearableProvisional ?? 'Provisional',
@@ -1213,70 +1372,86 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
           onTap: () => go(c, const MetricDetail('skin_temp')),
         ),
       if (worn != null)
-        MetricRow(LucideIcons.watch, C.green, l?.healthRowWearTime ?? 'Wear time',
-            hm(worn),
-            // `83.33333333333333% of the day` shipped. It is a percentage.
-            sub: coverage == null
-                ? dayWord
-                : (l?.healthCoverageOf(coverage.round(),
-                        isToday ? (l.healthTheDay) : dayWord) ??
+        MetricRow(
+          LucideIcons.watch,
+          C.green,
+          l?.healthRowWearTime ?? 'Wear time',
+          hm(worn),
+          // `83.33333333333333% of the day` shipped. It is a percentage.
+          sub: coverage == null
+              ? dayWord
+              : (l?.healthCoverageOf(
+                      coverage.round(),
+                      isToday ? (l.healthTheDay) : dayWord,
+                    ) ??
                     '${coverage.round()}% of '
                         '${isToday ? 'the day' : dayWord}'),
-            onTap: () => go(c, const MetricDetail('wear'))),
+          onTap: () => go(c, const MetricDetail('wear')),
+        ),
     ];
 
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      ...dayNavRow(_vDay ?? v.day, v.days, _goVitalsDay),
-      if (rows.isEmpty)
-        StatusCard(
-          l?.healthNothingMeasuredDay ?? 'Nothing measured for this day',
-          l?.healthNoBandRecordings ?? 'No band recordings reached this day.',
-          fix: syncOf(c) == null ? '' : (l?.healthSyncTheBand ?? 'Sync the band'),
-          icon: LucideIcons.watch,
-          onFix: syncOf(c),
-        )
-      else
-        Surface(
-          pad: const EdgeInsets.symmetric(horizontal: S.x4),
-          child: Column(children: [
-            for (var i = 0; i < rows.length; i++) ...[
-              if (i > 0) Divider(color: p.line, height: 1),
-              rows[i],
-            ],
-          ]),
-        ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ...dayNavRow(_vDay ?? v.day, v.days, _goVitalsDay),
+        if (rows.isEmpty)
+          StatusCard(
+            l?.healthNothingMeasuredDay ?? 'Nothing measured for this day',
+            l?.healthNoBandRecordings ?? 'No band recordings reached this day.',
+            fix: syncOf(c) == null
+                ? ''
+                : (l?.healthSyncTheBand ?? 'Sync the band'),
+            icon: LucideIcons.watch,
+            onFix: syncOf(c),
+          )
+        else
+          Surface(
+            pad: const EdgeInsets.symmetric(horizontal: S.x4),
+            child: Column(
+              children: [
+                for (var i = 0; i < rows.length; i++) ...[
+                  if (i > 0) Divider(color: p.line, height: 1),
+                  rows[i],
+                ],
+              ],
+            ),
+          ),
 
-      // No skin-temperature caveat card here. The row's own unit already says
-      // the reading is relative, and `metric_detail` carries the method for
-      // anyone who taps through — a whole card restating it on the way past is
-      // the kind of explanation this screen was asked to stop giving.
+        // No skin-temperature caveat card here. The row's own unit already says
+        // the reading is relative, and `metric_detail` carries the method for
+        // anyone who taps through — a whole card restating it on the way past is
+        // the kind of explanation this screen was asked to stop giving.
 
-      // No "Sleep architecture" deep dive either: Sleep is a tab of its own,
-      // and a second door into it from Vitals is a duplicate entry point, not
-      // a feature.
-      if (rmssd != null)
-        Section(
-          l?.healthDeepDivesTitle ?? 'Deep dives',
-          DeepDiveCard(
+        // No "Sleep architecture" deep dive either: Sleep is a tab of its own,
+        // and a second door into it from Vitals is a duplicate entry point, not
+        // a feature.
+        if (rmssd != null)
+          Section(
+            l?.healthDeepDivesTitle ?? 'Deep dives',
+            DeepDiveCard(
               l?.healthHeartRateVariability ?? 'Heart rate variability',
               '${rmssd.round()}',
               'ms',
-              l?.healthTimeFrequencyNonLinear ?? 'Time, frequency and non-linear',
+              l?.healthTimeFrequencyNonLinear ??
+                  'Time, frequency and non-linear',
               C.green,
               preview: _hrvPreview(c, d),
-              onTap: () => go(c, const Investigate('hrv'))),
-        ),
+              onTap: () => go(c, const Investigate('hrv')),
+            ),
+          ),
 
-      // The research charts, all behind one door.
-      const SizedBox(height: S.x3),
-      detailLinkRow(
+        // The research charts, all behind one door.
+        const SizedBox(height: S.x3),
+        detailLinkRow(
           c,
           LucideIcons.flaskConical,
           l?.healthAdvancedLinkTitle ?? 'Advanced charts',
           l?.healthAdvancedLinkSub ??
               'Beat-to-beat detail and sleep timing, for the curious',
-          () => go(c, const AdvancedScreen())),
-    ]);
+          () => go(c, const AdvancedScreen()),
+        ),
+      ],
+    );
   }
 
   /// The HRV preview inside the deep-dive card. Framed like every other chart:
@@ -1295,7 +1470,8 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
     final p = P.of(c);
     final l = AppLocalizations.of(c);
     return ChartFrame(
-      title: l?.healthRmssdOfLastNights(have.length, days) ??
+      title:
+          l?.healthRmssdOfLastNights(have.length, days) ??
           'HRV, ${have.length} of the last $days nights',
       unit: 'ms',
       height: 48,
@@ -1308,7 +1484,9 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
             ],
       empty: have.length < 2
           ? NoData(
-              message: l?.healthOneNightNotTrend ?? 'One night is not a trend yet')
+              message:
+                  l?.healthOneNightNotTrend ?? 'One night is not a trend yet',
+            )
           : null,
       series: win,
       child: CustomPaint(
@@ -1344,9 +1522,13 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
       }
     }
 
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Surface(
-        child: Consistency(have, total,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Surface(
+          child: Consistency(
+            have,
+            total,
             l?.healthMeasuresWithHistory ??
                 'Measures with stored history on this device',
             C.domHealth,
@@ -1357,12 +1539,14 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
         // Not a promise of insight — a statement of what a tap gets you. Every
         // row below opens the same drill-down: the chart, your own range, the
         // method in full, and the paper it came from.
-      Text(
+        Text(
           l?.healthEachOneOpens ??
               'Each one opens its chart, your own range, and how it is worked out.',
-          style: F.over.copyWith(color: p.ink3, height: 1.6)),
-      for (final f in _catalogue) _family(c, p, f, e.counts),
-    ]);
+          style: F.over.copyWith(color: p.ink3, height: 1.6),
+        ),
+        for (final f in _catalogue) _family(c, p, f, e.counts),
+      ],
+    );
   }
 
   Widget _family(BuildContext c, P p, _Cat f, Map<String, int> counts) {
@@ -1425,16 +1609,17 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
           if (none.isNotEmpty) ...[
             if (have.isNotEmpty) const SizedBox(height: S.x3),
             StatusCard(
-            have.isEmpty
-                ? (l?.healthNothingMeasuredHere ?? 'Nothing measured here yet')
-                : (l?.healthNotMeasuredYet ?? 'Not measured yet'),
+              have.isEmpty
+                  ? (l?.healthNothingMeasuredHere ??
+                        'Nothing measured here yet')
+                  : (l?.healthNotMeasuredYet ?? 'Not measured yet'),
               // No cause is named, because none is known here: this screen reads
               // a row count, and a count of zero says the day never produced one
               // — never why. No `fix:` either; there is no button that makes a
               // derive happen for a night that has already been scored.
               '${none.map((r) => uiText(c, specOf(r.key).title)).join(' · ')}. '
-                '${l?.healthNoDayProduced ?? 'No day on this device has '
-                    'produced one yet.'}',
+              '${l?.healthNoDayProduced ?? 'No day on this device has '
+                      'produced one yet.'}',
               icon: LucideIcons.chartLine,
             ),
           ],
@@ -1471,8 +1656,11 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
     // way MonoTable drops an empty row. A bare em-dash in a lab column reads as
     // "the assay failed", which is a claim about your blood.
     final rows = latest.values.where((r) => r['value'] is num).toList()
-      ..sort((a, b) => (byKey[a['marker']]?.label ?? '')
-          .compareTo(byKey[b['marker']]?.label ?? ''));
+      ..sort(
+        (a, b) => (byKey[a['marker']]?.label ?? '').compareTo(
+          byKey[b['marker']]?.label ?? '',
+        ),
+      );
     final lastDraw = l.results.isEmpty ? null : l.results.first['taken_on'];
     // Markers the user named themselves — the only ones whose DEFINITION is
     // theirs to remove. A catalogue marker is the app's and stays.
@@ -1483,48 +1671,66 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
       counts[k] = (counts[k] ?? 0) + 1;
     }
 
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      if (rows.isEmpty)
-        StatusCard(
-          loc?.healthNoLabResults ?? 'No lab results',
-          loc?.healthNoLabResultsBody ??
-              'Nothing logged. Anything you add here stays on this device, '
-                  'and anything you remove is gone from it.',
-          icon: LucideIcons.testTube,
-        )
-      else ...[
-        Surface(
-          pad: const EdgeInsets.symmetric(horizontal: S.x4),
-          child: Column(children: [
-            for (var i = 0; i < rows.length; i++) ...[
-              if (i > 0) Divider(color: p.line, height: 1),
-              _lab(p, byKey[rows[i]['marker'].toString()], rows[i], sex,
-                  () => _removeResult(byKey[rows[i]['marker'].toString()],
-                      rows[i], l)),
-            ],
-          ]),
-        ),
-        const SizedBox(height: S.x3),
-        Text(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (rows.isEmpty)
+          StatusCard(
+            loc?.healthNoLabResults ?? 'No lab results',
+            loc?.healthNoLabResultsBody ??
+                'Nothing logged. Anything you add here stays on this device, '
+                    'and anything you remove is gone from it.',
+            icon: LucideIcons.testTube,
+          )
+        else ...[
+          Surface(
+            pad: const EdgeInsets.symmetric(horizontal: S.x4),
+            child: Column(
+              children: [
+                for (var i = 0; i < rows.length; i++) ...[
+                  if (i > 0) Divider(color: p.line, height: 1),
+                  _lab(
+                    p,
+                    byKey[rows[i]['marker'].toString()],
+                    rows[i],
+                    sex,
+                    () => _removeResult(
+                      byKey[rows[i]['marker'].toString()],
+                      rows[i],
+                      l,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: S.x3),
+          Text(
             loc?.healthLastPanel(lastDraw?.toString() ?? '') ??
                 'Last panel ${lastDraw ?? ''} · logged by hand',
-            style: F.over.copyWith(color: p.ink3)),
-      ],
-      if (mine.isNotEmpty) _myMarkers(p, mine, counts),
-      const SizedBox(height: S.x4),
-      BigButton(loc?.healthAddAResult ?? 'Add a result',
+            style: F.over.copyWith(color: p.ink3),
+          ),
+        ],
+        if (mine.isNotEmpty) _myMarkers(p, mine, counts),
+        const SizedBox(height: S.x4),
+        BigButton(
+          loc?.healthAddAResult ?? 'Add a result',
           icon: LucideIcons.plus,
           color: C.blue,
           soft: true,
-          onTap: () => _addLab(c, l)),
-      const SizedBox(height: S.x4),
-      // The app never prints "abnormal" anywhere, so it does not need to say
-      // it does not. What the user cannot know without being told is that the
-      // range shown here is not the range their own lab used.
-      Text(loc?.healthRangesDifferByLab ??
+          onTap: () => _addLab(c, l),
+        ),
+        const SizedBox(height: S.x4),
+        // The app never prints "abnormal" anywhere, so it does not need to say
+        // it does not. What the user cannot know without being told is that the
+        // range shown here is not the range their own lab used.
+        Text(
+          loc?.healthRangesDifferByLab ??
               'Ranges differ by lab. Use the one on your report.',
-          style: F.over.copyWith(color: p.ink3, height: 1.6)),
-    ]);
+          style: F.over.copyWith(color: p.ink3, height: 1.6),
+        ),
+      ],
+    );
   }
 
   String _markerName(LabMarker? m, String fallback) => m == null
@@ -1540,18 +1746,23 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
   /// unit prints as it was stored.
   static String _valueOf(LabMarker? m, Map<String, dynamic> r, double v) =>
       m != null && m.judgesUnit(r['unit'])
-          ? m.format(v)
-          : v == v.roundToDouble()
-          ? v.round().toString()
-          : '$v';
+      ? m.format(v)
+      : v == v.roundToDouble()
+      ? v.round().toString()
+      : '$v';
 
   static String _unitOf(LabMarker? m, Map<String, dynamic> r) {
     final stored = '${r['unit'] ?? ''}'.trim();
     return stored.isEmpty ? (m?.unit ?? '') : stored;
   }
 
-  Widget _lab(P p, LabMarker? m, Map<String, dynamic> r, String? sex,
-      VoidCallback onRemove) {
+  Widget _lab(
+    P p,
+    LabMarker? m,
+    Map<String, dynamic> r,
+    String? sex,
+    VoidCallback onRemove,
+  ) {
     final l = AppLocalizations.of(context);
     final v = (r['value'] as num?)?.toDouble();
     final unit = _unitOf(m, r);
@@ -1574,15 +1785,16 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
           'Remove ${m?.label ?? r['marker']} from ${r['taken_on']}',
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: S.x3),
-        child: Row(children: [
-          Container(
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(
-              // No interval means NO OPINION — a grey dot, never a green one.
-              color: inRange == null
-                  ? p.ink3
-                  : (inRange ? p.on(C.green) : p.on(C.orange)),
+        child: Row(
+          children: [
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                // No interval means NO OPINION — a grey dot, never a green one.
+                color: inRange == null
+                    ? p.ink3
+                    : (inRange ? p.on(C.green) : p.on(C.orange)),
                 shape: BoxShape.circle,
               ),
             ),
@@ -1595,42 +1807,58 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
                     _markerName(m, r['marker'].toString()),
                     style: F.body.copyWith(color: p.ink),
                   ),
-              Text(
-                  range == null
-                      ? (l?.healthNoReferenceInterval(r['taken_on'].toString()) ??
-                          'No reference interval · ${r['taken_on']}')
-                      : (l?.healthTypicalRange(_num(range.low), _num(range.high),
-                              r['taken_on'].toString()) ??
-                          'Typical ${_num(range.low)}–${_num(range.high)} · '
-                              '${r['taken_on']}'),
-                  style: F.over.copyWith(color: p.ink3)),
-            ]),
-          ),
-          const SizedBox(width: S.x2),
-          // Sized to its text like before, but capped: a result in another
-          // unit prints every digit it was stored with, and at large text a
-          // long one would push the row past the screen. It wraps instead.
-          ConstrainedBox(
-            constraints: BoxConstraints(
-                maxWidth: MediaQuery.sizeOf(context).width * 0.4),
-            child: Text.rich(
-              TextSpan(children: [
-                TextSpan(
-                    text: v == null ? '' : _valueOf(m, r, v),
-                    style: F.n17.copyWith(
-                        color: inRange == false ? p.on(C.orange) : p.ink)),
-                const TextSpan(text: '\u2009'),
-                TextSpan(text: unit, style: F.over.copyWith(color: p.ink3)),
-              ]),
-              textAlign: TextAlign.end,
-              softWrap: true,
+                  Text(
+                    range == null
+                        ? (l?.healthNoReferenceInterval(
+                                r['taken_on'].toString(),
+                              ) ??
+                              'No reference interval · ${r['taken_on']}')
+                        : (l?.healthTypicalRange(
+                                _num(range.low),
+                                _num(range.high),
+                                r['taken_on'].toString(),
+                              ) ??
+                              'Typical ${_num(range.low)}–${_num(range.high)} · '
+                                  '${r['taken_on']}'),
+                    style: F.over.copyWith(color: p.ink3),
+                  ),
+                ],
+              ),
             ),
-          ),
-          // This is the user's own blood work in an app that keeps it on their
-          // phone; being able to take it back out is the premise, not a setting.
-          const SizedBox(width: S.x2),
-          Icon(LucideIcons.trash2, size: 16, color: p.ink3),
-        ]),
+            const SizedBox(width: S.x2),
+            // Sized to its text like before, but capped: a result in another
+            // unit prints every digit it was stored with, and at large text a
+            // long one would push the row past the screen. It wraps instead.
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.sizeOf(context).width * 0.4,
+              ),
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: v == null ? '' : _valueOf(m, r, v),
+                      style: F.n17.copyWith(
+                        color: inRange == false ? p.on(C.orange) : p.ink,
+                      ),
+                    ),
+                    const TextSpan(text: '\u2009'),
+                    TextSpan(
+                      text: unit,
+                      style: F.over.copyWith(color: p.ink3),
+                    ),
+                  ],
+                ),
+                textAlign: TextAlign.end,
+                softWrap: true,
+              ),
+            ),
+            // This is the user's own blood work in an app that keeps it on their
+            // phone; being able to take it back out is the premise, not a setting.
+            const SizedBox(width: S.x2),
+            Icon(LucideIcons.trash2, size: 16, color: p.ink3),
+          ],
+        ),
       ),
     );
   }
@@ -1639,7 +1867,10 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
   /// there is no undo here, and a generic "are you sure?" over a column of
   /// blood results is how the wrong one is lost.
   Future<void> _removeResult(
-      LabMarker? m, Map<String, dynamic> r, LabsData l) async {
+    LabMarker? m,
+    Map<String, dynamic> r,
+    LabsData l,
+  ) async {
     final loc = AppLocalizations.of(context);
     final marker = r['marker'].toString();
     final takenOn = r['taken_on'].toString();
@@ -1656,28 +1887,34 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
 
     final ok = await confirmRemove(
       context,
-      title: loc?.healthRemoveLabelFrom(label, takenOn) ??
+      title:
+          loc?.healthRemoveLabelFrom(label, takenOn) ??
           'Remove $label from $takenOn?',
-      body: (loc?.healthRemoveLabBody(_valueOf(m, r, v), unit) ??
+      body:
+          (loc?.healthRemoveLabBody(_valueOf(m, r, v), unit) ??
               'The ${_valueOf(m, r, v)} $unit you logged for that draw. '
                   'It leaves this device and there is no undo.') +
           (older == null
               ? ''
               : (loc?.healthRemoveLabOlderNote(older) ??
-                  ' Your $older draw stays, and shows here instead.')),
+                    ' Your $older draw stays, and shows here instead.')),
     );
     if (!ok || !mounted) return;
     await LocalDb.deleteLabResult(marker, takenOn);
     _l = null;
     await _loadLabs();
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(older == null
-          ? (loc?.healthRemovedNoneLeft(label, takenOn) ??
-              'Removed $label from $takenOn. No $label results left.')
-          : (loc?.healthRemovedShowingOlder(label, takenOn, older) ??
-              'Removed $label from $takenOn. Showing your $older draw now.')),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          older == null
+              ? (loc?.healthRemovedNoneLeft(label, takenOn) ??
+                    'Removed $label from $takenOn. No $label results left.')
+              : (loc?.healthRemovedShowingOlder(label, takenOn, older) ??
+                    'Removed $label from $takenOn. Showing your $older draw now.'),
+        ),
+      ),
+    );
   }
 
   /// Markers the user named. Only the DEFINITION is theirs to remove here —
@@ -1688,42 +1925,52 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
       l?.healthMarkersYouNamed ?? 'Markers you named',
       Surface(
         pad: const EdgeInsets.symmetric(horizontal: S.x4),
-        child: Column(children: [
-          for (var i = 0; i < mine.length; i++) ...[
-            if (i > 0) Divider(color: p.line, height: 1),
-            Pressable(
-              semanticLabel: l?.healthRemoveTheMarker(mine[i].label) ??
-                  'Remove the ${mine[i].label} marker',
-              onTap: () => _removeMarker(mine[i], counts[mine[i].key] ?? 0),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: S.x3),
-                child: Row(children: [
-                  Expanded(
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(mine[i].label,
-                              style: F.body.copyWith(color: p.ink)),
-                          Text(
+        child: Column(
+          children: [
+            for (var i = 0; i < mine.length; i++) ...[
+              if (i > 0) Divider(color: p.line, height: 1),
+              Pressable(
+                semanticLabel:
+                    l?.healthRemoveTheMarker(mine[i].label) ??
+                    'Remove the ${mine[i].label} marker',
+                onTap: () => _removeMarker(mine[i], counts[mine[i].key] ?? 0),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: S.x3),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              mine[i].label,
+                              style: F.body.copyWith(color: p.ink),
+                            ),
+                            Text(
                               (counts[mine[i].key] ?? 0) == 0
                                   ? (l?.healthNothingLoggedUnderIt ??
-                                      'Nothing logged under it')
+                                        'Nothing logged under it')
                                   : (l?.healthResultsCount(
                                           counts[mine[i].key] ?? 0,
-                                          mine[i].unit) ??
-                                      '${counts[mine[i].key]} '
-                                          '${(counts[mine[i].key] ?? 0) == 1 ? 'result' : 'results'} · '
-                                          '${mine[i].unit}'),
-                              style: F.over.copyWith(color: p.ink3)),
-                        ]),
+                                          mine[i].unit,
+                                        ) ??
+                                        '${counts[mine[i].key]} '
+                                            '${(counts[mine[i].key] ?? 0) == 1 ? 'result' : 'results'} · '
+                                            '${mine[i].unit}'),
+                              style: F.over.copyWith(color: p.ink3),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: S.x2),
+                      Icon(LucideIcons.trash2, size: 16, color: p.ink3),
+                    ],
                   ),
-                  const SizedBox(width: S.x2),
-                  Icon(LucideIcons.trash2, size: 16, color: p.ink3),
-                ]),
+                ),
               ),
-            ),
+            ],
           ],
-        ]),
+        ),
       ),
     );
   }
@@ -1742,18 +1989,23 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
   Future<void> _removeMarker(LabMarker m, int results) async {
     final l = AppLocalizations.of(context);
     if (results > 0) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(l?.healthStillHoldsResults(results, m.label) ??
-            '${m.label} still holds $results '
-                '${results == 1 ? 'result' : 'results'}. Remove those first — '
-                'the marker is what labels them.'),
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l?.healthStillHoldsResults(results, m.label) ??
+                '${m.label} still holds $results '
+                    '${results == 1 ? 'result' : 'results'}. Remove those first — '
+                    'the marker is what labels them.',
+          ),
+        ),
+      );
       return;
     }
     final ok = await confirmRemove(
       context,
       title: l?.healthRemoveMarkerQ(m.label) ?? 'Remove ${m.label}?',
-      body: l?.healthRemoveMarkerBody ??
+      body:
+          l?.healthRemoveMarkerBody ??
           'It leaves the marker list, so you can no longer log it. Nothing '
               'measured goes with it — you have no results under it.',
     );
@@ -1802,29 +2054,37 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
                     onChanged: (m) => setLocal(() => marker = m ?? marker),
                   ),
                 ),
-              TextFormField(
-                onChanged: (s) => valueText = s,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                    labelText: loc?.healthValueUnit(marker.unit) ??
-                        'Value (${marker.unit})'),
-              ),
-              TextFormField(
-                initialValue: takenOnText,
-                onChanged: (s) => takenOnText = s,
-                decoration: InputDecoration(
-                    labelText: loc?.healthDateDrawn ?? 'Date drawn (YYYY-MM-DD)'),
-              ),
-            ]),
+                TextFormField(
+                  onChanged: (s) => valueText = s,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    labelText:
+                        loc?.healthValueUnit(marker.unit) ??
+                        'Value (${marker.unit})',
+                  ),
+                ),
+                TextFormField(
+                  initialValue: takenOnText,
+                  onChanged: (s) => takenOnText = s,
+                  decoration: InputDecoration(
+                    labelText:
+                        loc?.healthDateDrawn ?? 'Date drawn (YYYY-MM-DD)',
+                  ),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.of(dc).pop(false),
-                child: Text(loc?.actionCancel ?? 'Cancel')),
+              onPressed: () => Navigator.of(dc).pop(false),
+              child: Text(loc?.actionCancel ?? 'Cancel'),
+            ),
             TextButton(
-                onPressed: () => Navigator.of(dc).pop(true),
-                child: Text(loc?.actionSave ?? 'Save')),
+              onPressed: () => Navigator.of(dc).pop(true),
+              child: Text(loc?.actionSave ?? 'Save'),
+            ),
           ],
         ),
       ),
@@ -1845,18 +2105,19 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
     // on top of every real result.
     final error = v.value == null
         ? (loc?.healthValueMustBeNumber ??
-            'The value needs to be a number on its own, without the unit. '
-                'Nothing was saved.')
+              'The value needs to be a number on its own, without the unit. '
+                  'Nothing was saved.')
         : !isValidDayLabel(date)
-            ? (loc?.healthDateFormatError ??
-                'The date needs to be YYYY-MM-DD. Nothing was saved.')
-            : date.compareTo(todayLabel()) > 0
-                ? (loc?.healthDateInFuture ??
-                    'That date is after today. Nothing was saved.')
-                : null;
+        ? (loc?.healthDateFormatError ??
+              'The date needs to be YYYY-MM-DD. Nothing was saved.')
+        : date.compareTo(todayLabel()) > 0
+        ? (loc?.healthDateInFuture ??
+              'That date is after today. Nothing was saved.')
+        : null;
     if (error != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(error)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
       return;
     }
     try {
@@ -1868,9 +2129,14 @@ class _HealthScreenState extends State<HealthScreen> with RevisionReload {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(loc?.healthCouldNotSaveIt(e.toString()) ??
-                'Could not save it: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              loc?.healthCouldNotSaveIt(e.toString()) ??
+                  'Could not save it: $e',
+            ),
+          ),
+        );
       }
       return;
     }

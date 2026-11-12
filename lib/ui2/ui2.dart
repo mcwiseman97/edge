@@ -17,3 +17,4 @@ export 'revision.dart';
 export 'scroll_hint.dart';
 export 'theme.dart';
 export 'trend.dart';
+export 'wb/kit.dart';
