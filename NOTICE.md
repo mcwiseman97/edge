@@ -8,6 +8,15 @@ trademarks.
 No WHOOP source code, binaries, firmware, or copyrighted assets are included
 in this repository.
 
+## WhoopsBand fork
+
+This repository is a fork of [OpenStrap/edge](https://github.com/OpenStrap/edge)
+for the WhoopsBand project. Upstream copyright remains with OpenStrap
+(Copyright (c) 2026 OpenStrap). The code license remains AGPL-3.0
+(see `LICENSE`). Durable attribution details are in [`ATTRIBUTION.md`](ATTRIBUTION.md).
+OpenStrap name/logo use is governed by [`TRADEMARKS.md`](TRADEMARKS.md), separate
+from the code license.
+
 ## wger exercise data
 
 `lib/ui2/activity/wger_exercises.g.dart` contains selected fields (names,

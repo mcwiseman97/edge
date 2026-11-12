@@ -12,6 +12,12 @@
 > affected band. See [firmware compatibility](#whoop-firmware-compatibility)
 > for the evidence and its limits.
 
+> [!NOTE]
+> **WhoopsBand fork.** This repository is based on
+> [OpenStrap/edge](https://github.com/OpenStrap/edge) (Copyright (c) 2026 OpenStrap,
+> AGPL-3.0). See [ATTRIBUTION.md](ATTRIBUTION.md), [NOTICE](NOTICE), and
+> [TRADEMARKS.md](TRADEMARKS.md). It is not an official OpenStrap release.
+
 <img width="1774" height="887" alt="OpenStrap Edge" src="https://github.com/user-attachments/assets/66653a25-ac97-4f8c-8be1-6c9fceeaf08b" />
 
 A health app for your wearables. No subscription, no fees, private by default.
@@ -121,4 +127,6 @@ describe compatibility.
 
 ## License
 
-AGPL-3.0. See [LICENSE](LICENSE). The OpenStrap name and logo: [TRADEMARKS.md](TRADEMARKS.md).
+AGPL-3.0. See [LICENSE](LICENSE). Based on [OpenStrap/edge](https://github.com/OpenStrap/edge);
+attribution: [ATTRIBUTION.md](ATTRIBUTION.md) and [NOTICE](NOTICE). The OpenStrap
+name and logo: [TRADEMARKS.md](TRADEMARKS.md).
