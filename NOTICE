@@ -7,3 +7,9 @@ License that shipped with them. Everything after it is licensed under the GNU Af
 General Public License version 3 (see LICENSE).
 
 The OpenStrap name and logo are not covered by the code licence. See TRADEMARKS.md.
+
+----
+
+This repository is a fork of https://github.com/OpenStrap/edge maintained for
+the WhoopsBand project. See ATTRIBUTION.md for the durable upstream attribution
+record. Modifications in this fork remain under AGPL-3.0.
